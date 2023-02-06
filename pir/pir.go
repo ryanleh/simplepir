@@ -10,35 +10,9 @@ import (
 	// "math"
 )
 
-// Defines the interface for PIR with preprocessing schemes
-type PIR interface {
-	Name() string
-
-	PickParams(N, d, n, logq uint64) Params
-	PickParamsGivenDimensions(l, m, n, logq uint64) Params
-
-	GetBW(info DBinfo, p Params)
-
-	Init(info DBinfo, p Params) State
-	InitCompressed(info DBinfo, p Params) (State, CompressedState)
-	DecompressState(info DBinfo, p Params, comp CompressedState) State
-
-	Setup(DB *Database, shared State, p Params) (State, Msg)
-	FakeSetup(DB *Database, p Params) (State, float64) // used for benchmarking online phase
-
-	Query(i uint64, shared State, p Params, info DBinfo) (State, Msg)
-
-	Answer(DB *Database, query MsgSlice, server State, shared State, p Params) Msg
-
-	Recover(i uint64, batch_index uint64, offline Msg, query Msg, answer Msg, shared State, client State,
-		p Params, info DBinfo) uint64
-
-	Reset(DB *Database, p Params) // reset DB to its correct state, if modified during execution
-}
-
 // Run PIR's online phase, with a random preprocessing (to skip the offline phase).
 // Gives accurate bandwidth and online time measurements.
-func RunFakePIR(pi PIR, DB *Database, p Params, i []uint64,
+func RunFakePIR(pi *SimplePIR, DB *Database, p Params, i []uint64,
 	f *os.File, profile bool) (float64, float64, float64, float64) {
 	fmt.Printf("Executing %s\n", pi.Name())
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
@@ -96,7 +70,7 @@ func RunFakePIR(pi PIR, DB *Database, p Params, i []uint64,
 }
 
 // Run full PIR scheme (offline + online phases).
-func RunPIR(pi PIR, DB *Database, p Params, i []uint64) (float64, float64) {
+func RunPIR(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64) {
 	fmt.Printf("Executing %s\n", pi.Name())
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
 	debug.SetGCPercent(-1)
@@ -171,7 +145,7 @@ func RunPIR(pi PIR, DB *Database, p Params, i []uint64) (float64, float64) {
 }
 
 // Run full PIR scheme (offline + online phases), where the transmission of the A matrix is compressed.
-func RunPIRCompressed(pi PIR, DB *Database, p Params, i []uint64) (float64, float64) {
+func RunPIRCompressed(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64) {
 	fmt.Printf("Executing %s\n", pi.Name())
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
 	debug.SetGCPercent(-1)
