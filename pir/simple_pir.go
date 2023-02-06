@@ -54,37 +54,6 @@ func (pi *SimplePIR) PickParamsGivenDimensions(l, m, n, logq uint64) Params {
 	return p
 }
 
-// Works for SimplePIR because vertical concatenation doesn't increase
-// the number of LWE samples (so don't need to change LWE params)
-func (pi *SimplePIR) ConcatDBs(DBs []*Database, p *Params) *Database {
-	if len(DBs) == 0 {
-		panic("Should not happen")
-	}
-
-	if DBs[0].Info.Num != p.L*p.M {
-		panic("Not yet implemented")
-	}
-
-	rows := DBs[0].Data.Rows
-	for j := 1; j < len(DBs); j++ {
-		if DBs[j].Data.Rows != rows {
-			panic("Bad input")
-		}
-	}
-
-	D := new(Database)
-	D.Data = MatrixZeros(0, 0)
-	D.Info = DBs[0].Info
-	D.Info.Num *= uint64(len(DBs))
-	p.L *= uint64(len(DBs))
-
-	for j := 0; j < len(DBs); j++ {
-		D.Data.Concat(DBs[j].Data.SelectRows(0, rows))
-	}
-
-	return D
-}
-
 func (pi *SimplePIR) GetBW(info DBinfo, p Params) {
 	offline_download := float64(p.L*p.N*p.Logq) / (8.0 * 1024.0)
 	fmt.Printf("\t\tOffline download: %d KB\n", uint64(offline_download))
