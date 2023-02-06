@@ -14,7 +14,7 @@ import (
 // Gives accurate bandwidth and online time measurements.
 func RunFakePIR(pi *SimplePIR, DB *Database, p Params, i []uint64,
 	f *os.File, profile bool) (float64, float64, float64, float64) {
-	fmt.Printf("Executing %s\n", pi.Name())
+	fmt.Printf("Executing\n")
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
 	debug.SetGCPercent(-1)
 
@@ -71,7 +71,7 @@ func RunFakePIR(pi *SimplePIR, DB *Database, p Params, i []uint64,
 
 // Run full PIR scheme (offline + online phases).
 func RunPIR(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64) {
-	fmt.Printf("Executing %s\n", pi.Name())
+	fmt.Printf("Executing\n")
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
 	debug.SetGCPercent(-1)
 
@@ -146,7 +146,7 @@ func RunPIR(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64
 
 // Run full PIR scheme (offline + online phases), where the transmission of the A matrix is compressed.
 func RunPIRCompressed(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64) {
-	fmt.Printf("Executing %s\n", pi.Name())
+	fmt.Printf("Executing\n")
 	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
 	debug.SetGCPercent(-1)
 

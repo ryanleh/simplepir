@@ -16,8 +16,7 @@ const SEC_PARAM = uint64(1 << 10)
 func TestDBMediumEntries(t *testing.T) {
 	N := uint64(4)
 	d := uint64(9)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	pir := NewSimplePIR(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
 	DB := MakeDB(N, d, &p, vals)

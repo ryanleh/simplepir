@@ -5,13 +5,11 @@ package pir
 import "C"
 import "fmt"
 
-type SimplePIR struct{}
-
-func (pi *SimplePIR) Name() string {
-	return "SimplePIR"
+type SimplePIR struct{
+  params Params
 }
 
-func (pi *SimplePIR) PickParams(N, d, n, logq uint64) Params {
+func pickParams(N, d, n, logq uint64) Params {
 	good_p := Params{}
 	found := false
 
@@ -41,6 +39,13 @@ func (pi *SimplePIR) PickParams(N, d, n, logq uint64) Params {
 
 	panic("Cannot be reached")
 	return Params{}
+}
+
+
+func NewSimplePIR(N, d, n, logq uint64) *SimplePIR {
+  pi := new(SimplePIR)
+  pi.params = pickParams(N, d, n, logq)
+  return pi
 }
 
 func (pi *SimplePIR) GetBW(info DBinfo, p Params) {
