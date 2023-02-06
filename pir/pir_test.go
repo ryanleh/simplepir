@@ -133,29 +133,6 @@ func TestSimplePirBW(t *testing.T) {
 	pir.GetBW(DB.Info, p)
 }
 
-// Print the BW used by DoublePIR
-func TestDoublePirBW(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(2048)
-
-	log_N, _ := strconv.Atoi(os.Getenv("LOG_N"))
-	D, _ := strconv.Atoi(os.Getenv("D"))
-	if log_N != 0 {
-		N = uint64(1 << log_N)
-	}
-	if D != 0 {
-		d = uint64(D)
-	}
-
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-	DB := SetupDB(N, d, &p)
-
-	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
-		d, p.P, DB.Info.Packing, DB.Info.Ne)
-
-	pir.GetBW(DB.Info, p)
-}
 
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir(t *testing.T) {
@@ -262,118 +239,6 @@ func TestSimplePirLongRowBatchCompressed(t *testing.T) {
 	RunPIRCompressed(&pir, DB, p, []uint64{0, 0, 0, 0})
 }
 
-// Test DoublePIR correctness on DB with short entries.
-func TestDoublePir(t *testing.T) {
-	N := uint64(1 << 28)
-	d := uint64(3)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{0})
-}
-
-func TestDoublePirCompressed(t *testing.T) {
-	N := uint64(1 << 22)
-	d := uint64(3)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{0})
-}
-
-// Test DoublePIR correctness on DB with long entries.
-func TestDoublePirLongRow(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(32)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-
-	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
-		d, p.P, DB.Info.Packing, DB.Info.Ne)
-
-	RunPIR(&pir, DB, p, []uint64{1 << 19})
-}
-
-func TestDoublePirLongRowCompressed(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(32)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-
-	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
-		d, p.P, DB.Info.Packing, DB.Info.Ne)
-
-	RunPIRCompressed(&pir, DB, p, []uint64{1 << 19})
-}
-
-// Test DoublePIR correctness on big DB
-func TestDoublePirBigDB(t *testing.T) {
-	N := uint64(1 << 25)
-	d := uint64(7)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{0})
-}
-
-func TestDoublePirBigDBCompressed(t *testing.T) {
-	N := uint64(1 << 23)
-	d := uint64(7)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{0})
-}
-
-// Test DoublePIR correctness on DB with short entries, and batching.
-func TestDoublePirBatch(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(8)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{0, 0, 0, 0})
-}
-
-func TestDoublePirBatchCompressed(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(8)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{0, 0, 0, 0})
-}
-
-// Test DoublePIR correctness on DB with long entries, and batching.
-func TestDoublePirLongRowBatch(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(32)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{0, 0, 0, 0})
-}
-
-func TestDoublePirLongRowBatchCompressed(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(32)
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{0, 0, 0, 0})
-}
 
 // Benchmark SimplePIR performance.
 func BenchmarkSimplePirSingle(b *testing.B) {
@@ -412,42 +277,6 @@ func BenchmarkSimplePirSingle(b *testing.B) {
 	fmt.Printf("Std dev of SimplePIR tput, except for first run: %f MB/s\n", stddev(tputs))
 }
 
-// Benchmark DoublePIR performance.
-func BenchmarkDoublePirSingle(b *testing.B) {
-	f, err := os.Create("double-cpu.out")
-	if err != nil {
-		panic("Error creating file")
-	}
-
-	N := uint64(1 << 20)
-	d := uint64(2048)
-
-	log_N, _ := strconv.Atoi(os.Getenv("LOG_N"))
-	D, _ := strconv.Atoi(os.Getenv("D"))
-	if log_N != 0 {
-		N = uint64(1 << log_N)
-	}
-	if D != 0 {
-		d = uint64(D)
-	}
-
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	i := uint64(0) // index to query
-	if i >= p.L*p.M {
-		panic("Index out of dimensions")
-	}
-
-	DB := MakeRandomDB(N, d, &p)
-	var tputs []float64
-	for j := 0; j < 5; j++ {
-		tput, _, _, _ := RunFakePIR(&pir, DB, p, []uint64{i}, f, false)
-		tputs = append(tputs, tput)
-	}
-	fmt.Printf("Avg DoublePIR tput, except for first run: %f MB/s\n", avg(tputs))
-	fmt.Printf("Std dev of DoublePIR tput, except for first run: %f MB/s\n", stddev(tputs))
-}
 
 // Benchmark SimplePIR performance, on 1GB databases with increasing row length.
 func BenchmarkSimplePirVaryingDB(b *testing.B) {
@@ -503,58 +332,6 @@ func BenchmarkSimplePirVaryingDB(b *testing.B) {
 	}
 }
 
-// Benchmark DoublePIR performance, on 1 GB databases with increasing row length.
-func BenchmarkDoublePirVaryingDB(b *testing.B) {
-	flog, err := os.OpenFile("double-comm.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		panic("Error creating log file")
-	}
-	defer flog.Close()
-
-	writer := csv.NewWriter(flog)
-	defer writer.Flush()
-
-	records := []string{"N", "d", "tput", "tput_stddev", "offline_comm", "online_comm"}
-	writer.Write(records)
-
-	pir := DoublePIR{}
-
-	// Set N, D
-	total_sz := 33
-	for d := uint64(1); d <= 32768; d *= 2 {
-		N := uint64(1<<total_sz) / d
-		p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-		i := uint64(0) // index to query
-		if i >= p.L*p.M {
-			panic("Index out of dimensions")
-		}
-
-		DB := MakeRandomDB(N, d, &p)
-		var tputs []float64
-		var offline_cs []float64
-		var online_cs []float64
-
-		for j := 0; j < 5; j++ {
-			tput, _, offline_c, online_c := RunFakePIR(&pir, DB, p, []uint64{i}, nil, false)
-			tputs = append(tputs, tput)
-			offline_cs = append(offline_cs, offline_c)
-			online_cs = append(online_cs, online_c)
-		}
-		fmt.Printf("Avg SimplePIR tput (%d, %d), except for first run: %f MB/s\n", N, d, avg(tputs))
-		fmt.Printf("Std dev of SimplePIR tput (%d, %d), except for first run: %f MB/s\n", N, d, stddev(tputs))
-		if (stddev(offline_cs) != 0) || (stddev(online_cs) != 0) {
-			fmt.Printf("%f %f SHOULD NOT HAPPEN\n", stddev(offline_cs), stddev(online_cs))
-			//panic("Should not happen!")
-		}
-		writer.Write([]string{strconv.FormatUint(N, 10),
-			strconv.FormatUint(d, 10),
-			strconv.FormatFloat(avg(tputs), 'f', 4, 64),
-			strconv.FormatFloat(stddev(tputs), 'f', 4, 64),
-			strconv.FormatFloat(avg(offline_cs), 'f', 4, 64),
-			strconv.FormatFloat(avg(online_cs), 'f', 4, 64)})
-	}
-}
 
 // Benchmark SimplePIR performance with batches of increasing size.
 func BenchmarkSimplePirBatchLarge(b *testing.B) {
@@ -622,67 +399,3 @@ func BenchmarkSimplePirBatchLarge(b *testing.B) {
 	}
 }
 
-// Benchmark DoublePIR performance with batches of increasing size.
-func BenchmarkDoublePirBatchLarge(b *testing.B) {
-	f, err := os.Create("double-cpu-batch.out")
-	if err != nil {
-		panic("Error creating file")
-	}
-
-	flog, err := os.Create("double-batch.log")
-	if err != nil {
-		panic("Error creating log file")
-	}
-	defer flog.Close()
-
-	N := uint64(1 << 33)
-	d := uint64(1)
-
-	log_N, _ := strconv.Atoi(os.Getenv("LOG_N"))
-	D, _ := strconv.Atoi(os.Getenv("D"))
-	if log_N != 0 {
-		N = uint64(1 << log_N)
-	}
-	if D != 0 {
-		d = uint64(D)
-	}
-
-	pir := DoublePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
-
-	i := uint64(0) // index to query
-	if i >= p.L*p.M {
-		panic("Index out of dimensions")
-	}
-
-	DB := MakeRandomDB(N, d, &p)
-
-	writer := csv.NewWriter(flog)
-	defer writer.Flush()
-
-	records := []string{"Batch_sz", "Good_tput", "Good_std_dev", "Num_successful_queries", "Tput"}
-	writer.Write(records)
-
-	for trial := 0; trial <= 10; trial += 1 {
-		batch_sz := (1 << trial)
-		var query []uint64
-		for j := 0; j < batch_sz; j++ {
-			query = append(query, i)
-		}
-		var tputs []float64
-		for iter := 0; iter < 5; iter++ {
-			tput, _, _, _ := RunFakePIR(&pir, DB, p, query, f, false)
-			tputs = append(tputs, tput)
-		}
-		expected_num_empty_buckets := math.Pow(float64(batch_sz-1)/float64(batch_sz), float64(batch_sz)) * float64(batch_sz)
-		expected_num_successful_queries := float64(batch_sz) - expected_num_empty_buckets
-		good_tput := avg(tputs) / float64(batch_sz) * expected_num_successful_queries
-		dev := stddev(tputs) / float64(batch_sz) * expected_num_successful_queries
-
-		writer.Write([]string{strconv.Itoa(batch_sz),
-			strconv.FormatFloat(good_tput, 'f', 4, 64),
-			strconv.FormatFloat(dev, 'f', 4, 64),
-			strconv.FormatFloat(expected_num_successful_queries, 'f', 4, 64),
-			strconv.FormatFloat(avg(tputs), 'f', 4, 64)})
-	}
-}
