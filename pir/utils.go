@@ -48,24 +48,3 @@ func Num_DB_entries(N, row_length, p uint64) (uint64, uint64, uint64) {
 	return N * ne, ne, 0
 }
 
-func avg(data []float64) float64 {
-	sum := 0.0
-	num := 0.0
-	for _, elem := range data {
-		sum += elem
-		num += 1.0
-	}
-	return sum / num
-}
-
-func stddev(data []float64) float64 {
-	avg := avg(data)
-	sum := 0.0
-	num := 0.0
-	for _, elem := range data {
-		sum += math.Pow(elem-avg, 2)
-		num += 1.0
-	}
-	variance := sum / num // not -1!
-	return math.Sqrt(variance)
-}

@@ -168,7 +168,7 @@ func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 	return info
 }
 
-func MakeRandomDB(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
+func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	db := new(Database)
   db.Info = NewDBInfo(Num, row_length, p)
 	db.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
@@ -179,7 +179,7 @@ func MakeRandomDB(prg *BufPRGReader, Num, row_length uint64, p *Params) *Databas
 	return db
 }
 
-func MakeDB(Num, row_length uint64, p *Params, vals []uint64) *Database {
+func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
   db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
 	db.Data = MatrixZeros(p.L, p.M)
