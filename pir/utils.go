@@ -47,4 +47,3 @@ func Num_DB_entries(N, row_length, p uint64) (uint64, uint64, uint64) {
 	ne := Compute_num_entries_base_p(p, row_length)
 	return N * ne, ne, 0
 }
-

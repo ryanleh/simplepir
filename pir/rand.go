@@ -102,7 +102,7 @@ func NewBufPRG(prg *PRGReader) *BufPRGReader {
 }
 
 func NewRandomBufPRG() *BufPRGReader {
-  return NewBufPRG(NewPRG(RandomPRGKey()))
+	return NewBufPRG(NewPRG(RandomPRGKey()))
 }
 
 func (b *BufPRGReader) RandInt(mod *big.Int) *big.Int {
@@ -138,4 +138,3 @@ func (b *BufPRGReader) Uint64() uint64 {
 func (b *BufPRGReader) Seed(int64) {
 	panic("Should never call seed")
 }
-

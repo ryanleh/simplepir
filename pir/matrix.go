@@ -13,14 +13,14 @@ type Matrix struct {
 }
 
 func (m *Matrix) Copy() *Matrix {
-  out := &Matrix{
-    Rows: m.Rows,
-    Cols: m.Cols,
-    Data: make([]C.Elem, len(m.Data)),
-  }
+	out := &Matrix{
+		Rows: m.Rows,
+		Cols: m.Cols,
+		Data: make([]C.Elem, len(m.Data)),
+	}
 
-  copy(out.Data[:], m.Data[:])
-  return out
+	copy(out.Data[:], m.Data[:])
+	return out
 }
 
 func (m *Matrix) Size() uint64 {

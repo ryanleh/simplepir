@@ -22,13 +22,13 @@ func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
 		}
 	}
 
-  return db
+	return db
 }
 
 // Test that DB packing methods are correct, when each database entry is ~ 1 Z_p elem.
 func TestDBMediumEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-  db := testDBInit(t, uint64(4), uint64(9), vals)
+	db := testDBInit(t, uint64(4), uint64(9), vals)
 
 	if db.Info.Packing != 1 || db.Info.Ne != 1 {
 		t.FailNow()
@@ -38,7 +38,7 @@ func TestDBMediumEntries(t *testing.T) {
 // Test that DB packing methods are correct, when multiple database entries fit in 1 Z_p elem.
 func TestDBSmallEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-  db := testDBInit(t, uint64(4), uint64(3), vals)
+	db := testDBInit(t, uint64(4), uint64(3), vals)
 
 	if db.Info.Packing <= 1 || db.Info.Ne != 1 {
 		t.FailNow()
@@ -48,7 +48,7 @@ func TestDBSmallEntries(t *testing.T) {
 // Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
 func TestDBLargeEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-  db := testDBInit(t, uint64(4), uint64(12), vals)
+	db := testDBInit(t, uint64(4), uint64(12), vals)
 
 	if db.Info.Packing != 0 || db.Info.Ne <= 1 {
 		panic("Should not happen.")
@@ -56,52 +56,51 @@ func TestDBLargeEntries(t *testing.T) {
 }
 
 func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
-  prg := NewRandomBufPRG()
+	prg := NewRandomBufPRG()
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 	db := NewDatabaseRandom(prg, N, d, p)
 
-  server := NewServer(p, db)
-  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServer(p, db)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
 
 	RunPIR(client, server, db, p, index)
 }
 
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
-  prg := NewRandomBufPRG()
+	prg := NewRandomBufPRG()
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 	db := NewDatabaseRandom(prg, N, d, p)
 
-  seed := RandomPRGKey()
-  server := NewServerSeed(p, db, seed)
-  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	seed := RandomPRGKey()
+	server := NewServerSeed(p, db, seed)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
 
 	RunPIR(client, server, db, p, index)
 }
 
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir(t *testing.T) {
-  testSimplePir(t, uint64(1 << 20), uint64(8), 262144)
+	testSimplePir(t, uint64(1<<20), uint64(8), 262144)
 }
 
 func TestSimplePirCompressed(t *testing.T) {
-  testSimplePirCompressed(t, uint64(1 << 20), uint64(8), 262144)
+	testSimplePirCompressed(t, uint64(1<<20), uint64(8), 262144)
 }
 
 // Test SimplePIR correctness on DB with long entries
 func TestSimplePirLongRow(t *testing.T) {
-  testSimplePir(t, uint64(1 << 20), uint64(32), 1)
+	testSimplePir(t, uint64(1<<20), uint64(32), 1)
 }
 
 func TestSimplePirLongRowCompressed(t *testing.T) {
-  testSimplePirCompressed(t, uint64(1 << 20), uint64(32), 1)
+	testSimplePirCompressed(t, uint64(1<<20), uint64(32), 1)
 }
 
 // Test SimplePIR correctness on big DB
 func TestSimplePirBigDB(t *testing.T) {
-  testSimplePir(t, uint64(1 << 25), uint64(7), 0)
+	testSimplePir(t, uint64(1<<25), uint64(7), 0)
 }
 
 func TestSimplePirBigDBCompressed(t *testing.T) {
-  testSimplePirCompressed(t, uint64(1 << 25), uint64(7), 0)
+	testSimplePirCompressed(t, uint64(1<<25), uint64(7), 0)
 }
-

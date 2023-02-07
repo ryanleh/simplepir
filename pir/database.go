@@ -28,10 +28,10 @@ type Database struct {
 }
 
 func (db *Database) Copy() *Database {
-  return &Database {
-    Info: db.Info,
-    Data: db.Data.Copy(),
-  }
+	return &Database{
+		Info: db.Info,
+		Data: db.Data.Copy(),
+	}
 }
 
 func (db *Database) Squish() {
@@ -170,7 +170,7 @@ func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 
 func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	db := new(Database)
-  db.Info = NewDBInfo(Num, row_length, p)
+	db.Info = NewDBInfo(Num, row_length, p)
 	db.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
 
 	// Map db elems to [-p/2; p/2]
@@ -180,7 +180,7 @@ func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Da
 }
 
 func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
-  db := new(Database)
+	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
 	db.Data = MatrixZeros(p.L, p.M)
 

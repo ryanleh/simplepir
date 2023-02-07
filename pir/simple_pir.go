@@ -3,54 +3,55 @@ package pir
 // #cgo CFLAGS: -O3 -march=native
 // #include "pir.h"
 import "C"
+
 //import "fmt"
 
 type Server struct {
-  params *Params
-  matrixA *Matrix
+	params  *Params
+	matrixA *Matrix
 
-  db *Database
-  hint *Matrix
+	db   *Database
+	hint *Matrix
 }
 
 type Client struct {
-  prg *BufPRGReader
+	prg *BufPRGReader
 
-  params *Params
-  hint *Matrix
+	params *Params
+	hint   *Matrix
 
-  matrixA *Matrix
-  dbinfo *DBInfo
+	matrixA *Matrix
+	dbinfo  *DBInfo
 }
 
 type Query = Matrix
 type Secret struct {
-  query *Query
-  secret *Matrix
-  index uint64
+	query  *Query
+	secret *Matrix
+	index  uint64
 }
 
 type Answer = Matrix
 
 func NewServer(params *Params, db *Database) *Server {
-  prg := NewRandomBufPRG()
-  matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
-  return setupServer(params, db, matrixA)
+	prg := NewRandomBufPRG()
+	matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
+	return setupServer(params, db, matrixA)
 }
 
 func NewServerSeed(params *Params, db *Database, seed *PRGKey) *Server {
-  prg := NewBufPRG(NewPRG(seed))
-  matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
-  return setupServer(params, db, matrixA)
+	prg := NewBufPRG(NewPRG(seed))
+	matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
+	return setupServer(params, db, matrixA)
 }
 
 func setupServer(params *Params, db *Database, matrixA *Matrix) *Server {
-  s := &Server{
-    params: params,
-    matrixA: matrixA,
-    db: db.Copy(),
-    hint: MatrixMul(db.Data, matrixA),
-  }
+	s := &Server{
+		params:  params,
+		matrixA: matrixA,
+		db:      db.Copy(),
+		hint:    MatrixMul(db.Data, matrixA),
+	}
 
 	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
@@ -58,56 +59,56 @@ func setupServer(params *Params, db *Database, matrixA *Matrix) *Server {
 	s.db.Data.Add(s.params.P / 2)
 	s.db.Squish()
 
-  return s
+	return s
 }
 
 func (s *Server) Hint() *Matrix {
-  return s.hint
+	return s.hint
 }
 
 func (s *Server) MatrixA() *Matrix {
-  return s.matrixA
+	return s.matrixA
 }
 
 func NewClient(params *Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Client {
-  return &Client {
-    prg: NewRandomBufPRG(),
+	return &Client{
+		prg: NewRandomBufPRG(),
 
-    params: params, 
-    hint: hint.Copy(),  
+		params: params,
+		hint:   hint.Copy(),
 
-    matrixA: matrixA.Copy(), 
-    dbinfo: dbinfo,
-  }
+		matrixA: matrixA.Copy(),
+		dbinfo:  dbinfo,
+	}
 }
 
 func (c *Client) Query(i uint64) (*Secret, *Query) {
-  s := &Secret{
-    secret: MatrixRand(c.prg, c.params.N, 1, c.params.Logq, 0),
-    index: i,
-  }
+	s := &Secret{
+		secret: MatrixRand(c.prg, c.params.N, 1, c.params.Logq, 0),
+		index:  i,
+	}
 
 	err := MatrixGaussian(c.prg, c.params.M, 1)
 
 	query := MatrixMul(c.matrixA, s.secret)
 	query.MatrixAdd(err)
-	query.Data[i % c.params.M] += C.Elem(c.params.Delta())
+	query.Data[i%c.params.M] += C.Elem(c.params.Delta())
 
 	// Pad the query to match the dimensions of the compressed DB
 	if c.params.M%c.dbinfo.Squishing != 0 {
 		query.AppendZeros(c.dbinfo.Squishing - (c.params.M % c.dbinfo.Squishing))
 	}
 
-  s.query = query.Copy()
+	s.query = query.Copy()
 
 	return s, query
 }
 
 func (s *Server) Answer(query *Query) *Answer {
-  return MatrixMulVecPacked(s.db.Data,
-    query,
-    s.db.Info.Basis,
-    s.db.Info.Squishing)
+	return MatrixMulVecPacked(s.db.Data,
+		query,
+		s.db.Info.Basis,
+		s.db.Info.Squishing)
 }
 
 func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
@@ -135,4 +136,3 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 
 	return ReconstructElem(vals, secret.index, c.dbinfo)
 }
-
