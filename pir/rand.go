@@ -28,35 +28,20 @@ import (
 	"io"
 	"math/big"
 	mrand "math/rand"
-	"sync"
 )
 
 type PRGKey [aes.BlockSize]byte
 
-var prgMutex sync.Mutex
-var bufPrgReader *BufPRGReader
-
 const bufSize = 8192
 
-// Produce a random integer in Z_p where mod is the value p.
-func RandInt(mod *big.Int) *big.Int {
-	prgMutex.Lock()
-	out := bufPrgReader.RandInt(mod)
-	prgMutex.Unlock()
-	return out
-}
-
-func MathRand() *mrand.Rand {
-	return mrand.New(bufPrgReader)
+func (r *BufPRGReader) MathRand() *mrand.Rand {
+	return mrand.New(r)
 }
 
 // We use the AES-CTR to generate pseudo-random  numbers using a
 // stream cipher. Go's native rand.Reader is extremely slow because
 // it makes tons of system calls to generate a small number of
 // pseudo-random bytes.
-//
-// We pay the overhead of using a sync.Mutex to synchronize calls
-// to AES-CTR, but this is relatively cheap.
 type PRGReader struct {
 	Key    PRGKey
 	stream cipher.Stream
@@ -134,7 +119,6 @@ func (b *BufPRGReader) Int63() int64 {
 func (b *BufPRGReader) Uint64() uint64 {
 	var buf [8]byte
 
-	prgMutex.Lock()
 	read := 0
 	for read < 8 {
 		n, err := b.stream.Read(buf[read:8])
@@ -143,7 +127,6 @@ func (b *BufPRGReader) Uint64() uint64 {
 		}
 		read += n
 	}
-	prgMutex.Unlock()
 
 	return binary.LittleEndian.Uint64(buf[:])
 }
@@ -152,6 +135,3 @@ func (b *BufPRGReader) Seed(int64) {
 	panic("Should never call seed")
 }
 
-func init() {
-	bufPrgReader = NewBufPRG(RandomPRG())
-}

@@ -12,6 +12,17 @@ type Matrix struct {
 	Data []C.Elem
 }
 
+func (m *Matrix) Copy() *Matrix {
+  out := &Matrix{
+    Rows: m.Rows,
+    Cols: m.Cols,
+    Data: make([]C.Elem, len(m.Data)),
+  }
+
+  copy(out.Data[:], m.data[:])
+  return out
+}
+
 func (m *Matrix) Size() uint64 {
 	return m.Rows * m.Cols
 }
@@ -35,14 +46,14 @@ func MatrixNewNoAlloc(rows uint64, cols uint64) *Matrix {
 	return out
 }
 
-func MatrixRand(rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
+func MatrixRand(rand *BufPRGReader, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
 	out := MatrixNew(rows, cols)
 	m := big.NewInt(int64(mod))
 	if mod == 0 {
 		m = big.NewInt(1 << logmod)
 	}
 	for i := 0; i < len(out.Data); i++ {
-		out.Data[i] = C.Elem(RandInt(m).Uint64())
+		out.Data[i] = C.Elem(rand.RandInt(m).Uint64())
 	}
 	return out
 }
@@ -55,10 +66,10 @@ func MatrixZeros(rows uint64, cols uint64) *Matrix {
 	return out
 }
 
-func MatrixGaussian(rows, cols uint64) *Matrix {
+func MatrixGaussian(prg *BufPRGReader, rows, cols uint64) *Matrix {
 	out := MatrixNew(rows, cols)
 	for i := 0; i < len(out.Data); i++ {
-		out.Data[i] = C.Elem(GaussSample())
+		out.Data[i] = C.Elem(GaussSample(prg))
 	}
 	return out
 }

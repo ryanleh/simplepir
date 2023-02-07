@@ -3,7 +3,7 @@ package pir
 import "math"
 import "fmt"
 
-type DBinfo struct {
+type DBInfo struct {
 	Num        uint64 // number of DB entries.
 	Row_length uint64 // number of bits per DB entry.
 
@@ -23,8 +23,15 @@ type DBinfo struct {
 }
 
 type Database struct {
-	Info DBinfo
+	Info DBInfo
 	Data *Matrix
+}
+
+func (DB *Database) Copy() *Database {
+  return &Database {
+    Info: DB.Info,
+    Data: DB.Data.Copy(),
+  }
 }
 
 func (DB *Database) Squish() {
@@ -51,7 +58,7 @@ func (DB *Database) Unsquish() {
 
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
-func ReconstructElem(vals []uint64, index uint64, info DBinfo) uint64 {
+func ReconstructElem(vals []uint64, index uint64, info DBInfo) uint64 {
 	q := uint64(1 << info.Logq)
 
 	for i, _ := range vals {
@@ -165,9 +172,9 @@ func SetupDB(Num, row_length uint64, p *Params) *Database {
 	return D
 }
 
-func MakeRandomDB(Num, row_length uint64, p *Params) *Database {
+func MakeRandomDB(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	D := SetupDB(Num, row_length, p)
-	D.Data = MatrixRand(p.L, p.M, 0, p.P)
+	D.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
 
 	// Map DB elems to [-p/2; p/2]
 	D.Data.Sub(p.P / 2)

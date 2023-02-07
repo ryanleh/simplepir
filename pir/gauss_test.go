@@ -6,9 +6,11 @@ import (
 )
 
 func TestGauss(t *testing.T) {
+  prg := NewBufPRG(NewPRG(RandomPRGKey()))
+
 	buckets := make([]int, 256)
 	for i := 0; i < 1000000; i++ {
-		buckets[GaussSample()+128] += 1
+		buckets[GaussSample(prg)+128] += 1
 	}
 
 	for i := 0; i < len(buckets); i++ {

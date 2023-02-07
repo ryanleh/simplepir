@@ -10,64 +10,6 @@ import (
 	// "math"
 )
 
-// Run PIR's online phase, with a random preprocessing (to skip the offline phase).
-// Gives accurate bandwidth and online time measurements.
-func RunFakePIR(pi *SimplePIR, DB *Database, p Params, i []uint64,
-	f *os.File, profile bool) (float64, float64, float64, float64) {
-	fmt.Printf("Executing\n")
-	//fmt.Printf("Memory limit: %d\n", debug.SetMemoryLimit(math.MaxInt64))
-	debug.SetGCPercent(-1)
-
-	num_queries := uint64(len(i))
-	if DB.Data.Rows/num_queries < DB.Info.Ne {
-		panic("Too many queries to handle!")
-	}
-	shared_state := pi.Init(DB.Info, p)
-
-	fmt.Println("Setup...")
-	server_state, bw := pi.FakeSetup(DB, p)
-	offline_comm := bw
-	runtime.GC()
-
-	fmt.Println("Building query...")
-	start := time.Now()
-	var query MsgSlice
-	for index, _ := range i {
-		_, q := pi.Query(i[index], shared_state, p, DB.Info)
-		query.Data = append(query.Data, q)
-	}
-	printTime(start)
-	online_comm := float64(query.Size() * uint64(p.Logq) / (8.0 * 1024.0))
-	fmt.Printf("\t\tOnline upload: %f KB\n", online_comm)
-	bw += online_comm
-	runtime.GC()
-
-	fmt.Println("Answering query...")
-	if profile {
-		pprof.StartCPUProfile(f)
-	}
-	start = time.Now()
-	answer := pi.Answer(DB, query, server_state, shared_state, p)
-	elapsed := printTime(start)
-	if profile {
-		pprof.StopCPUProfile()
-	}
-	rate := printRate(p, elapsed, len(i))
-	online_down := float64(answer.Size() * uint64(p.Logq) / (8.0 * 1024.0))
-	fmt.Printf("\t\tOnline download: %f KB\n", online_down)
-	bw += online_down
-	online_comm += online_down
-
-	runtime.GC()
-	debug.SetGCPercent(100)
-	pi.Reset(DB, p)
-
-	if offline_comm+online_comm != bw {
-		panic("Should not happen!")
-	}
-
-	return rate, bw, offline_comm, online_comm
-}
 
 // Run full PIR scheme (offline + online phases).
 func RunPIR(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64) {
@@ -120,7 +62,6 @@ func RunPIR(pi *SimplePIR, DB *Database, p Params, i []uint64) (float64, float64
 	bw += comm
 	runtime.GC()
 
-	pi.Reset(DB, p)
 	fmt.Println("Reconstructing...")
 	start = time.Now()
 
@@ -196,7 +137,6 @@ func RunPIRCompressed(pi *SimplePIR, DB *Database, p Params, i []uint64) (float6
 	bw += comm
 	runtime.GC()
 
-	pi.Reset(DB, p)
 	fmt.Println("Reconstructing...")
 	start = time.Now()
 

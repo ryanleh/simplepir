@@ -5,9 +5,33 @@ package pir
 import "C"
 import "fmt"
 
-type SimplePIR struct{
+type Server struct {
   params Params
+
+  matrixA *Matrix
+  prg *BufPRGReader
+
+  db *Database
+  hint *Matrix
 }
+
+type Client struct {
+  prg *BufPRGReader
+
+  params Params
+  hint *Matrix
+
+  matrixA *Matrix
+  dbinfo *DBInfo
+}
+
+type Query = Matrix
+type Secret struct {
+  secret *Matrix
+  index uint64
+}
+
+type Answer = Matrix
 
 func pickParams(N, d, n, logq uint64) Params {
 	good_p := Params{}
@@ -42,115 +66,74 @@ func pickParams(N, d, n, logq uint64) Params {
 }
 
 
-func NewSimplePIR(N, d, n, logq uint64) *SimplePIR {
-  pi := new(SimplePIR)
-  pi.params = pickParams(N, d, n, logq)
-  return pi
+func NewServer(N, d, n, logq uint64) *Server {
+  s := new(Server)
+  s.params = pickParams(N, d, n, logq)
+  prg := NewBufPRG(NewPRG(RandomPRGKey()))
+	s.matrixA = MatrixRand(prg, p.M, p.N, p.Logq, 0)
+  return s
 }
 
-func (pi *SimplePIR) GetBW(info DBinfo, p Params) {
-	offline_download := float64(p.L*p.N*p.Logq) / (8.0 * 1024.0)
-	fmt.Printf("\t\tOffline download: %d KB\n", uint64(offline_download))
-
-	online_upload := float64(p.M*p.Logq) / (8.0 * 1024.0)
-	fmt.Printf("\t\tOnline upload: %d KB\n", uint64(online_upload))
-
-	online_download := float64(p.L*p.Logq) / (8.0 * 1024.0)
-	fmt.Printf("\t\tOnline download: %d KB\n", uint64(online_download))
+func NewServerSeed(N, d, n, logq uint64, seed *PRGKey) *Server {
+  s := new(Server)
+  s.params = pickParams(N, d, n, logq)
+	s.prg = NewBufPRG(NewPRG(seed))
+	s.matrixA = MatrixRand(s.prg, p.M, p.N, p.Logq, 0)
+  return s
 }
 
-func (pi *SimplePIR) Init(info DBinfo, p Params) State {
-	A := MatrixRand(p.M, p.N, p.Logq, 0)
-	return MakeState(A)
-}
-
-func (pi *SimplePIR) InitCompressed(info DBinfo, p Params) (State, CompressedState) {
-	seed := RandomPRGKey()
-	return pi.InitCompressedSeeded(info, p, seed)
-}
-
-func (pi *SimplePIR) InitCompressedSeeded(info DBinfo, p Params, seed *PRGKey) (State, CompressedState) {
-	bufPrgReader = NewBufPRG(NewPRG(seed))
-	return pi.Init(info, p), MakeCompressedState(seed)
-}
-
-func (pi *SimplePIR) DecompressState(info DBinfo, p Params, comp CompressedState) State {
-	bufPrgReader = NewBufPRG(NewPRG(comp.Seed))
-	return pi.Init(info, p)
-}
-
-func (pi *SimplePIR) Setup(DB *Database, shared State, p Params) (State, Msg) {
-	A := shared.Data[0]
-	H := MatrixMul(DB.Data, A)
+func (s *Server) SetDatabase(DB *Database) {
+  s.db = DB.Copy()
+	s.hint = MatrixMul(s.db.Data, s.matrixA)
 
 	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
 	// is memory-bandwidth-bound
-	DB.Data.Add(p.P / 2)
-	DB.Squish()
-
-	return MakeState(), MakeMsg(H)
+	s.db.Data.Add(s.params.P / 2)
+	s.db.Squish()
 }
 
-func (pi *SimplePIR) FakeSetup(DB *Database, p Params) (State, float64) {
-	offline_download := float64(p.L*p.N*uint64(p.Logq)) / (8.0 * 1024.0)
-	fmt.Printf("\t\tOffline download: %d KB\n", uint64(offline_download))
+func NewClient(params Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Client {
+  return &Client {
+    params: params, 
+    hint: hint.Copy(),  
 
-	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
-	// pack the database more tightly in memory, because the online computation
-	// is memory-bandwidth-bound
-	DB.Data.Add(p.P / 2)
-	DB.Squish()
-
-	return MakeState(), offline_download
+    matrixA: matrixA.Copy(), 
+    dbinfo: dbinfo,
+  }
 }
 
-func (pi *SimplePIR) Query(i uint64, shared State, p Params, info DBinfo) (State, Msg) {
-	A := shared.Data[0]
+func (c *Client) Query(i uint64) (*Secret, *Query) {
+  s := &Secret{
+    secret: MatrixRand(c.params.N, 1, c.params.Logq, 0),
+    index: i,
+  }
 
-	secret := MatrixRand(p.N, 1, p.Logq, 0)
-	err := MatrixGaussian(p.M, 1)
-	query := MatrixMul(A, secret)
+	err := MatrixGaussian(c.params.M, 1)
+
+	query := MatrixMul(c.matrixA, s.secret)
 	query.MatrixAdd(err)
-	query.Data[i%p.M] += C.Elem(p.Delta())
+	query.Data[i % c.params.M] += C.Elem(c.params.Delta())
 
 	// Pad the query to match the dimensions of the compressed DB
-	if p.M%info.Squishing != 0 {
-		query.AppendZeros(info.Squishing - (p.M % info.Squishing))
+	if c.params.M%c.dbinfo.Squishing != 0 {
+		query.AppendZeros(c.dbinfo.Squishing - (c.params.M % c.dbinfo.Squishing))
 	}
 
-	return MakeState(secret), MakeMsg(query)
+	return secret, query
 }
 
-func (pi *SimplePIR) Answer(DB *Database, query MsgSlice, server State, shared State, p Params) Msg {
+func (s *Server) Answer(query Query) *Answer {
 	ans := new(Matrix)
-	num_queries := uint64(len(query.Data)) // number of queries in the batch of queries
-	batch_sz := DB.Data.Rows / num_queries // how many rows of the database each query in the batch maps to
+	batch_sz := s.DB.Data.Rows / num_queries // how many rows of the database each query in the batch maps to
 
-	last := uint64(0)
-
-	// Run SimplePIR's answer routine for each query in the batch
-	for batch, q := range query.Data {
-		if batch == int(num_queries-1) {
-			batch_sz = DB.Data.Rows - last
-		}
-		a := MatrixMulVecPacked(DB.Data.SelectRows(last, batch_sz),
-			q.Data[0],
-			DB.Info.Basis,
-			DB.Info.Squishing)
-		ans.Concat(a)
-		last += batch_sz
-	}
-
-	return MakeMsg(ans)
+  return MatrixMulVecPacked(s.db.Data,
+    q.Data,
+    s.db.Info.Basis,
+    s.db.Info.Squishing)
 }
 
-func (pi *SimplePIR) Recover(i uint64, batch_index uint64, offline Msg, query Msg, answer Msg,
-	shared State, client State, p Params, info DBinfo) uint64 {
-	secret := client.Data[0]
-	H := offline.Data[0]
-	ans := answer.Data[0]
-
+func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 	ratio := p.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < p.M; j++ {
@@ -159,25 +142,20 @@ func (pi *SimplePIR) Recover(i uint64, batch_index uint64, offline Msg, query Ms
 	offset %= (1 << p.Logq)
 	offset = (1 << p.Logq) - offset
 
-	row := i / p.M
-	interm := MatrixMul(H, secret)
+	row := secret.index / p.M
+	interm := MatrixMul(c.hint, secret.secret)
 	ans.MatrixSub(interm)
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * info.Ne; j < (row+1)*info.Ne; j++ {
 		noised := uint64(ans.Data[j]) + offset
-		denoised := p.Round(noised)
+		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
 	ans.MatrixAdd(interm)
 
-	return ReconstructElem(vals, i, info)
+	return ReconstructElem(vals, secret.i, c.dbinfo)
 }
 
-func (pi *SimplePIR) Reset(DB *Database, p Params) {
-	// Uncompress the database, and map its entries to the range [-p/2, p/2].
-	DB.Unsquish()
-	DB.Data.Sub(p.P / 2)
-}

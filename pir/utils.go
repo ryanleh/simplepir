@@ -3,68 +3,6 @@ package pir
 import "math"
 import "fmt"
 
-type State struct {
-	Data []*Matrix
-}
-
-type CompressedState struct {
-	Seed *PRGKey
-}
-
-type Msg struct {
-	Data []*Matrix
-}
-
-func (m *Msg) Size() uint64 {
-	sz := uint64(0)
-	for _, d := range m.Data {
-		sz += d.Size()
-	}
-	return sz
-}
-
-type MsgSlice struct {
-	Data []Msg
-}
-
-func (m *MsgSlice) Size() uint64 {
-	sz := uint64(0)
-	for _, d := range m.Data {
-		sz += d.Size()
-	}
-	return sz
-}
-
-func MakeState(elems ...*Matrix) State {
-	st := State{}
-	for _, elem := range elems {
-		st.Data = append(st.Data, elem)
-	}
-	return st
-}
-
-func MakeCompressedState(elem *PRGKey) CompressedState {
-	st := CompressedState{}
-	st.Seed = elem
-	return st
-}
-
-func MakeMsg(elems ...*Matrix) Msg {
-	msg := Msg{}
-	for _, elem := range elems {
-		msg.Data = append(msg.Data, elem)
-	}
-	return msg
-}
-
-func MakeMsgSlice(elems ...Msg) MsgSlice {
-	slice := MsgSlice{}
-	for _, elem := range elems {
-		slice.Data = append(slice.Data, elem)
-	}
-	return slice
-}
-
 // Returns the i-th elem in the representation of m in base p.
 func Base_p(p, m, i uint64) uint64 {
 	for j := uint64(0); j < i; j++ {

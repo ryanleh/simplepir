@@ -84,3 +84,14 @@ func (p *Params) PrintParams() {
 		p.N, int(math.Log2(float64(p.L))+math.Log2(float64(p.M))), p.L, p.M, p.Logq,
 		p.P, p.Sigma)
 }
+
+func (p *Params) GetBW() {
+	offline_download := float64(p.L*p.N*p.Logq) / (8.0 * 1024.0)
+	fmt.Printf("\t\tOffline download: %d KB\n", uint64(offline_download))
+
+	online_upload := float64(p.M*p.Logq) / (8.0 * 1024.0)
+	fmt.Printf("\t\tOnline upload: %d KB\n", uint64(online_upload))
+
+	online_download := float64(p.L*p.Logq) / (8.0 * 1024.0)
+	fmt.Printf("\t\tOnline download: %d KB\n", uint64(online_download))
+}

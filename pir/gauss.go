@@ -26,8 +26,8 @@ var cdf_table = [...]float64{
 // sampler included in his dgs library:
 //
 //	https://github.com/malb/dgs
-func GaussSample() int64 {
-	mrand := MathRand()
+func GaussSample(prg *BufPRGReader) int64 {
+	mrand := prg.MathRand()
 
 	var x int64
 	var y float64

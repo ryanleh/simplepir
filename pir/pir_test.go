@@ -93,7 +93,7 @@ func TestSimplePirBW(t *testing.T) {
 	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
 		d, p.P, DB.Info.Packing, DB.Info.Ne)
 
-	pir.GetBW(DB.Info, p)
+	p.GetBW()
 }
 
 
