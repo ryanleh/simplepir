@@ -20,71 +20,6 @@ void matMul(Elem *out, const Elem *a, const Elem *b,
   }
 }
 
-void matMulTransposedPacked(Elem *out, const Elem *a, const Elem *b,
-    size_t aRows, size_t aCols, size_t bRows, size_t bCols)
-{
-  Elem val, tmp, db;
-  Elem tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
-  Elem db2, db3, db4, db5, db6, db7, db8;
-  Elem val2, val3, val4, val5, vl6, val7, val8;
-  size_t ind1, ind2;
-
-  if (aRows > aCols) { // when the database rows are long
-    ind1 = 0;
-    for (size_t i = 0; i < aRows; i += 1) {
-      for (size_t k = 0; k < aCols; k += 1) {
-        db = a[ind1++];
-    	val = db & MASK;
-    	val2 = (db >> BASIS) & MASK;
-    	val3 = (db >> BASIS2) & MASK;
-        for (size_t j = 0; j < bRows; j += 1) {
-	  out[bRows*i+j] += val*b[k*COMPRESSION+j*bCols];
-	  out[bRows*i+j] += val2*b[k*COMPRESSION+j*bCols+1];
-	  out[bRows*i+j] += val3*b[k*COMPRESSION+j*bCols+2];
-	}
-      }
-    }
-  } else { // when the database rows are short
-    for (size_t j = 0; j < bRows; j += 8) {
-      ind1 = 0;
-      for (size_t i = 0; i < aRows; i += 1) {
-        tmp = 0;
-	tmp2 = 0;
-        tmp3 = 0;
-	tmp4 = 0;
-	tmp5 = 0;
-	tmp6 = 0;
-	tmp7 = 0;
-	tmp8 = 0;
-        ind2 = 0;
-        for (size_t k = 0; k < aCols; k += 1) {
-          db = a[ind1++];
-          for (int m = 0; m < COMPRESSION; m++) {
-            val = (db >> (m*BASIS)) & MASK;
-            tmp += val*b[ind2+(j+0)*bCols];
-            tmp2 += val*b[ind2+(j+1)*bCols];
-            tmp3 += val*b[ind2+(j+2)*bCols];
-            tmp4 += val*b[ind2+(j+3)*bCols];
-            tmp5 += val*b[ind2+(j+4)*bCols];
-            tmp6 += val*b[ind2+(j+5)*bCols];
-            tmp7 += val*b[ind2+(j+6)*bCols];
-            tmp8 += val*b[ind2+(j+7)*bCols];
-            ind2++;
-          }
-        }
-        out[bRows*i+j+0] = tmp;
-        out[bRows*i+j+1] = tmp2;
-        out[bRows*i+j+2] = tmp3;
-        out[bRows*i+j+3] = tmp4;
-        out[bRows*i+j+4] = tmp5;
-        out[bRows*i+j+5] = tmp6;
-        out[bRows*i+j+6] = tmp7;
-        out[bRows*i+j+7] = tmp8;
-      }
-    }
-  }
-}
-
 void matMulVec(Elem *out, const Elem *a, const Elem *b,
     size_t aRows, size_t aCols)
 {
@@ -195,11 +130,3 @@ void matMulVecPacked(Elem *out, const Elem *a, const Elem *b,
   }
 }
 
-void transpose(Elem *out, const Elem *in, size_t rows, size_t cols)
-{
-  for (size_t i = 0; i < rows; i++) {
-    for (size_t j = 0; j < cols; j++) {
-      out[j*rows+i] = in[i*cols+j];
-    }
-  }
-}

@@ -165,27 +165,6 @@ func MatrixMul(a *Matrix, b *Matrix) *Matrix {
 	return out
 }
 
-func MatrixMulTransposedPacked(a *Matrix, b *Matrix, basis, compression uint64) *Matrix {
-	fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Cols, b.Rows)
-	if compression != 3 && basis != 10 {
-		panic("Must use hard-coded values!")
-	}
-
-	out := MatrixZeros(a.Rows, b.Rows)
-
-	outPtr := (*C.Elem)(&out.Data[0])
-	aPtr := (*C.Elem)(&a.Data[0])
-	bPtr := (*C.Elem)(&b.Data[0])
-	aRows := C.size_t(a.Rows)
-	aCols := C.size_t(a.Cols)
-	bRows := C.size_t(b.Rows)
-	bCols := C.size_t(b.Cols)
-
-	C.matMulTransposedPacked(outPtr, aPtr, bPtr, aRows, aCols, bRows, bCols)
-
-	return out
-}
-
 func MatrixMulVec(a *Matrix, b *Matrix) *Matrix {
 	if (a.Cols != b.Rows) && (a.Cols+1 != b.Rows) && (a.Cols+2 != b.Rows) { // do not require exact match because of DB compression
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
@@ -230,32 +209,6 @@ func MatrixMulVecPacked(a *Matrix, b *Matrix, basis, compression uint64) *Matrix
 	out.DropLastRows(8)
 
 	return out
-}
-
-func (m *Matrix) Transpose() {
-	if m.Cols == 1 {
-		m.Cols = m.Rows
-		m.Rows = 1
-		return
-	}
-	if m.Rows == 1 {
-		m.Rows = m.Cols
-		m.Cols = 1
-		return
-	}
-
-	out := MatrixNew(m.Cols, m.Rows)
-
-	outPtr := (*C.Elem)(&out.Data[0])
-	Ptr := (*C.Elem)(&m.Data[0])
-	rows := C.size_t(m.Rows)
-	cols := C.size_t(m.Cols)
-
-	C.transpose(outPtr, Ptr, rows, cols)
-
-	m.Cols = out.Cols
-	m.Rows = out.Rows
-	m.Data = out.Data
 }
 
 func (a *Matrix) Concat(b *Matrix) {
