@@ -4,11 +4,11 @@ import "math"
 import "fmt"
 
 type DBInfo struct {
-	Num        uint64 // number of DB entries.
-	Row_length uint64 // number of bits per DB entry.
+	Num        uint64 // number of db entries.
+	Row_length uint64 // number of bits per db entry.
 
-	Packing uint64 // number of DB entries per Z_p elem, if log(p) > DB entry size.
-	Ne      uint64 // number of Z_p elems per DB entry, if DB entry size > log(p).
+	Packing uint64 // number of db entries per Z_p elem, if log(p) > db entry size.
+	Ne      uint64 // number of Z_p elems per db entry, if db entry size > log(p).
 
 	X uint64 // tunable param that governs communication,
 	// must be in range [1, ne] and must be a divisor of ne;
@@ -16,44 +16,40 @@ type DBInfo struct {
 	P    uint64 // plaintext modulus.
 	Logq uint64 // (logarithm of) ciphertext modulus.
 
-	// For in-memory DB compression
+	// For in-memory db compression
 	Basis     uint64
 	Squishing uint64
 	Cols      uint64
 }
 
 type Database struct {
-	Info DBInfo
+	Info *DBInfo
 	Data *Matrix
 }
 
-func (DB *Database) Copy() *Database {
+func (db *Database) Copy() *Database {
   return &Database {
-    Info: DB.Info,
-    Data: DB.Data.Copy(),
+    Info: db.Info,
+    Data: db.Data.Copy(),
   }
 }
 
-func (DB *Database) Squish() {
-	//fmt.Printf("Original DB dims: ")
-	//DB.Data.Dim()
+func (db *Database) Squish() {
+	//fmt.Printf("Original db dims: ")
+	//db.Data.Dim()
 
-	DB.Info.Basis = 10
-	DB.Info.Squishing = 3
-	DB.Info.Cols = DB.Data.Cols
-	DB.Data.Squish(DB.Info.Basis, DB.Info.Squishing)
+	db.Info.Basis = 10
+	db.Info.Squishing = 3
+	db.Info.Cols = db.Data.Cols
+	db.Data.Squish(db.Info.Basis, db.Info.Squishing)
 
-	//fmt.Printf("After squishing, with compression factor %d: ", DB.Info.Squishing)
-	//DB.Data.Dim()
+	//fmt.Printf("After squishing, with compression factor %d: ", db.Info.Squishing)
+	//db.Data.Dim()
 
 	// Check that params allow for this compression
-	if (DB.Info.P > (1 << DB.Info.Basis)) || (DB.Info.Logq < DB.Info.Basis*DB.Info.Squishing) {
+	if (db.Info.P > (1 << db.Info.Basis)) || (db.Info.Logq < db.Info.Basis*db.Info.Squishing) {
 		panic("Bad params")
 	}
-}
-
-func (DB *Database) Unsquish() {
-	DB.Data.Unsquish(DB.Info.Basis, DB.Info.Squishing, DB.Info.Cols)
 }
 
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
@@ -75,30 +71,30 @@ func ReconstructElem(vals []uint64, index uint64, info *DBInfo) uint64 {
 	return val
 }
 
-func (DB *Database) GetElem(i uint64) uint64 {
-	if i >= DB.Info.Num {
+func (db *Database) GetElem(i uint64) uint64 {
+	if i >= db.Info.Num {
 		panic("Index out of range")
 	}
 
-	col := i % DB.Data.Cols
-	row := i / DB.Data.Cols
+	col := i % db.Data.Cols
+	row := i / db.Data.Cols
 
-	if DB.Info.Packing > 0 {
-		new_i := i / DB.Info.Packing
-		col = new_i % DB.Data.Cols
-		row = new_i / DB.Data.Cols
+	if db.Info.Packing > 0 {
+		new_i := i / db.Info.Packing
+		col = new_i % db.Data.Cols
+		row = new_i / db.Data.Cols
 	}
 
 	var vals []uint64
-	for j := row * DB.Info.Ne; j < (row+1)*DB.Info.Ne; j++ {
-		vals = append(vals, DB.Data.Get(j, col))
+	for j := row * db.Info.Ne; j < (row+1)*db.Info.Ne; j++ {
+		vals = append(vals, db.Data.Get(j, col))
 	}
 
-	return ReconstructElem(vals, i, &DB.Info)
+	return ReconstructElem(vals, i, db.Info)
 }
 
 // Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is
-// the number of Z_p elements per DB entry determined by row_length and p.
+// the number of Z_p elements per db entry determined by row_length and p.
 func ApproxSquareDatabaseDims(N, row_length, p uint64) (uint64, uint64) {
 	db_elems, elems_per_entry, _ := Num_DB_entries(N, row_length, p)
 	l := uint64(math.Floor(math.Sqrt(float64(db_elems))))
@@ -114,7 +110,7 @@ func ApproxSquareDatabaseDims(N, row_length, p uint64) (uint64, uint64) {
 }
 
 // Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is
-// the number of Z_p elements per DB entry determined by row_length and p, and m >=
+// the number of Z_p elements per db entry determined by row_length and p, and m >=
 // lower_bound_m.
 func ApproxDatabaseDims(N, row_length, p, lower_bound_m uint64) (uint64, uint64) {
 	l, m := ApproxSquareDatabaseDims(N, row_length, p)
@@ -134,88 +130,90 @@ func ApproxDatabaseDims(N, row_length, p, lower_bound_m uint64) (uint64, uint64)
 	return l, m
 }
 
-func SetupDB(Num, row_length uint64, p *Params) *Database {
-	if (Num == 0) || (row_length == 0) {
+func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
+	if (num == 0) || (row_length == 0) {
 		panic("Empty database!")
 	}
 
-	D := new(Database)
+	info := new(DBInfo)
 
-	D.Info.Num = Num
-	D.Info.Row_length = row_length
-	D.Info.P = p.P
-	D.Info.Logq = p.Logq
+	info.Num = num
+	info.Row_length = row_length
+	info.P = p.P
+	info.Logq = p.Logq
 
-	db_elems, elems_per_entry, entries_per_elem := Num_DB_entries(Num, row_length, p.P)
-	D.Info.Ne = elems_per_entry
-	D.Info.X = D.Info.Ne
-	D.Info.Packing = entries_per_elem
+	db_elems, elems_per_entry, entries_per_elem := Num_DB_entries(num, row_length, p.P)
+	info.Ne = elems_per_entry
+	info.X = info.Ne
+	info.Packing = entries_per_elem
 
-	for D.Info.Ne%D.Info.X != 0 {
-		D.Info.X += 1
+	for info.Ne%info.X != 0 {
+		info.X += 1
 	}
 
-	D.Info.Basis = 0
-	D.Info.Squishing = 0
+	info.Basis = 0
+	info.Squishing = 0
 
-	fmt.Printf("Total packed DB size is ~%f MB\n",
+	fmt.Printf("Total packed db size is ~%f MB\n",
 		float64(p.L*p.M)*math.Log2(float64(p.P))/(1024.0*1024.0*8.0))
 
 	if db_elems > p.L*p.M {
 		panic("Params and database size don't match")
 	}
 
-	if p.L%D.Info.Ne != 0 {
-		panic("Number of DB elems per entry must divide DB height")
+	if p.L%info.Ne != 0 {
+		panic("Number of db elems per entry must divide db height")
 	}
 
-	return D
+	return info
 }
 
 func MakeRandomDB(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
-	D := SetupDB(Num, row_length, p)
-	D.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
+	db := new(Database)
+  db.Info = NewDBInfo(Num, row_length, p)
+	db.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
 
-	// Map DB elems to [-p/2; p/2]
-	D.Data.Sub(p.P / 2)
+	// Map db elems to [-p/2; p/2]
+	db.Data.Sub(p.P / 2)
 
-	return D
+	return db
 }
 
 func MakeDB(Num, row_length uint64, p *Params, vals []uint64) *Database {
-	D := SetupDB(Num, row_length, p)
-	D.Data = MatrixZeros(p.L, p.M)
+  db := new(Database)
+	db.Info = NewDBInfo(Num, row_length, p)
+	db.Data = MatrixZeros(p.L, p.M)
 
 	if uint64(len(vals)) != Num {
-		panic("Bad input DB")
+		panic("Bad input db")
 	}
 
-	if D.Info.Packing > 0 {
-		// Pack multiple DB elems into each Z_p elem
+	if db.Info.Packing > 0 {
+		// Pack multiple db elems into each Z_p elem
 		at := uint64(0)
 		cur := uint64(0)
 		coeff := uint64(1)
 		for i, elem := range vals {
 			cur += (elem * coeff)
 			coeff *= (1 << row_length)
-			if ((i+1)%int(D.Info.Packing) == 0) || (i == len(vals)-1) {
-				D.Data.Set(cur, at/p.M, at%p.M)
+			if ((i+1)%int(db.Info.Packing) == 0) || (i == len(vals)-1) {
+				db.Data.Set(cur, at/p.M, at%p.M)
 				at += 1
 				cur = 0
 				coeff = 1
 			}
 		}
 	} else {
-		// Use multiple Z_p elems to represent each DB elem
+		// Use multiple Z_p elems to represent each db elem
 		for i, elem := range vals {
-			for j := uint64(0); j < D.Info.Ne; j++ {
-				D.Data.Set(Base_p(D.Info.P, elem, j), (uint64(i)/p.M)*D.Info.Ne+j, uint64(i)%p.M)
+			for j := uint64(0); j < db.Info.Ne; j++ {
+				db.Data.Set(Base_p(db.Info.P, elem, j), (uint64(i)/p.M)*db.Info.Ne+j, uint64(i)%p.M)
 			}
 		}
 	}
 
-	// Map DB elems to [-p/2; p/2]
-	D.Data.Sub(p.P / 2)
+	// Map db elems to [-p/2; p/2]
+	db.Data.Sub(p.P / 2)
 
-	return D
+	return db
 }

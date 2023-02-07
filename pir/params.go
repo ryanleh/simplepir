@@ -96,15 +96,15 @@ func (p *Params) GetBW() {
 	fmt.Printf("\t\tOnline download: %d KB\n", uint64(online_download))
 }
 
-func PickParams(N, d, n, logq uint64) Params {
-	good_p := Params{}
+func PickParams(N, d, n, logq uint64) *Params {
+	var good_p *Params
 	found := false
 
 	// Iteratively refine p and DB dims, until find tight values
 	for mod_p := uint64(2); ; mod_p += 1 {
 		l, m := ApproxSquareDatabaseDims(N, d, mod_p)
 
-		p := Params{
+		p := &Params{
 			N:    n,
 			Logq: logq,
 			L:    l,
@@ -125,5 +125,5 @@ func PickParams(N, d, n, logq uint64) Params {
 	}
 
 	panic("Cannot be reached")
-	return Params{}
+	return nil
 }

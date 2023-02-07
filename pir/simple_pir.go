@@ -6,7 +6,7 @@ import "C"
 //import "fmt"
 
 type Server struct {
-  params Params
+  params *Params
   matrixA *Matrix
 
   db *Database
@@ -16,7 +16,7 @@ type Server struct {
 type Client struct {
   prg *BufPRGReader
 
-  params Params
+  params *Params
   hint *Matrix
 
   matrixA *Matrix
@@ -32,19 +32,19 @@ type Secret struct {
 
 type Answer = Matrix
 
-func NewServer(params Params, db *Database) *Server {
-  prg := NewBufPRG(NewPRG(RandomPRGKey()))
+func NewServer(params *Params, db *Database) *Server {
+  prg := NewRandomBufPRG()
   matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
   return setupServer(params, db, matrixA)
 }
 
-func NewServerSeed(params Params, db *Database, seed *PRGKey) *Server {
+func NewServerSeed(params *Params, db *Database, seed *PRGKey) *Server {
   prg := NewBufPRG(NewPRG(seed))
   matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
   return setupServer(params, db, matrixA)
 }
 
-func setupServer(params Params, db *Database, matrixA *Matrix) *Server {
+func setupServer(params *Params, db *Database, matrixA *Matrix) *Server {
   s := &Server{
     params: params,
     matrixA: matrixA,
@@ -69,8 +69,10 @@ func (s *Server) MatrixA() *Matrix {
   return s.matrixA
 }
 
-func NewClient(params Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Client {
+func NewClient(params *Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Client {
   return &Client {
+    prg: NewRandomBufPRG(),
+
     params: params, 
     hint: hint.Copy(),  
 

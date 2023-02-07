@@ -101,6 +101,10 @@ func NewBufPRG(prg *PRGReader) *BufPRGReader {
 	return out
 }
 
+func NewRandomBufPRG() *BufPRGReader {
+  return NewBufPRG(NewPRG(RandomPRGKey()))
+}
+
 func (b *BufPRGReader) RandInt(mod *big.Int) *big.Int {
 	out, err := rand.Int(b.stream, mod)
 	if err != nil {

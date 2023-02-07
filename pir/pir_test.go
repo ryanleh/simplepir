@@ -2,10 +2,10 @@ package pir
 
 import (
 	//"encoding/csv"
-	"fmt"
+	//"fmt"
 	//"math"
-	"os"
-	"strconv"
+	//"os"
+	//"strconv"
 	"testing"
 )
 
@@ -19,7 +19,7 @@ func TestDBMediumEntries(t *testing.T) {
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
-	DB := MakeDB(N, d, &p, vals)
+	DB := MakeDB(N, d, p, vals)
 	if DB.Info.Packing != 1 || DB.Info.Ne != 1 {
 		panic("Should not happen.")
 	}
@@ -38,7 +38,7 @@ func TestDBSmallEntries(t *testing.T) {
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
-	DB := MakeDB(N, d, &p, vals)
+	DB := MakeDB(N, d, p, vals)
 	if DB.Info.Packing <= 1 || DB.Info.Ne != 1 {
 		panic("Should not happen.")
 	}
@@ -57,7 +57,7 @@ func TestDBLargeEntries(t *testing.T) {
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
-	DB := MakeDB(N, d, &p, vals)
+	DB := MakeDB(N, d, p, vals)
 	if DB.Info.Packing != 0 || DB.Info.Ne <= 1 {
 		panic("Should not happen.")
 	}
@@ -70,88 +70,78 @@ func TestDBLargeEntries(t *testing.T) {
 }
 
 
-// Print the BW used by SimplePIR
-func TestSimplePirBW(t *testing.T) {
-	N := uint64(1 << 20)
-	d := uint64(2048)
-
-	log_N, _ := strconv.Atoi(os.Getenv("LOG_N"))
-	D, _ := strconv.Atoi(os.Getenv("D"))
-	if log_N != 0 {
-		N = uint64(1 << log_N)
-	}
-	if D != 0 {
-		d = uint64(D)
-	}
-
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	DB := SetupDB(N, d, &p)
-
-	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
-		d, p.P, DB.Info.Packing, DB.Info.Ne)
-
-	p.GetBW()
-}
-
-
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(8)
 
-  prg := NewBufPRG(NewPRG(RandomPRGKey()))
+  prg := NewRandomBufPRG()
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := MakeRandomDB(prg, N, d, &p)
+	db := MakeRandomDB(prg, N, d, p)
 
   server := NewServer(p, db)
-  client := NewClient(p, server.Hint(), server.MatrixA(), &db.Info)
+  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
 
 	RunPIR(client, server, db, p, 262144)
 }
 
-/*
 func TestSimplePirCompressed(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(8)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{262144})
+  prg := NewRandomBufPRG()
+	db := MakeRandomDB(prg, N, d, p)
+  seed := RandomPRGKey()
+  server := NewServerSeed(p, db, seed)
+  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	RunPIR(client, server, db, p, 262142)
 }
 
 // Test SimplePIR correctness on DB with long entries
 func TestSimplePirLongRow(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(32)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{1})
+  prg := NewRandomBufPRG()
+	db := MakeRandomDB(prg, N, d, p)
+  server := NewServer(p, db)
+  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	RunPIR(client, server, db, p, 1)
 }
 
 func TestSimplePirLongRowCompressed(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(32)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
-	DB := MakeRandomDB(N, d, &p)
-	RunPIRCompressed(&pir, DB, p, []uint64{1})
+  prg := NewRandomBufPRG()
+	db := MakeRandomDB(prg, N, d, p)
+  seed := RandomPRGKey()
+  server := NewServerSeed(p, db, seed)
+  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	RunPIR(client, server, db, p, 1)
 }
 
 // Test SimplePIR correctness on big DB
 func TestSimplePirBigDB(t *testing.T) {
 	N := uint64(1 << 25)
 	d := uint64(7)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{0})
+  prg := NewRandomBufPRG()
+	db := MakeRandomDB(prg, N, d, p)
+  server := NewServer(p, db)
+  client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	RunPIR(client, server, db, p, 0)
 }
 
+/*
 func TestSimplePirBigDBCompressed(t *testing.T) {
 	N := uint64(1 << 25)
 	d := uint64(7)
