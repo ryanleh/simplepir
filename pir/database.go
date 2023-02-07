@@ -58,7 +58,7 @@ func (DB *Database) Unsquish() {
 
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
-func ReconstructElem(vals []uint64, index uint64, info DBInfo) uint64 {
+func ReconstructElem(vals []uint64, index uint64, info *DBInfo) uint64 {
 	q := uint64(1 << info.Logq)
 
 	for i, _ := range vals {
@@ -94,7 +94,7 @@ func (DB *Database) GetElem(i uint64) uint64 {
 		vals = append(vals, DB.Data.Get(j, col))
 	}
 
-	return ReconstructElem(vals, i, DB.Info)
+	return ReconstructElem(vals, i, &DB.Info)
 }
 
 // Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is

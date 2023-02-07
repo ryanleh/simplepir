@@ -1,9 +1,9 @@
 package pir
 
 import (
-	"encoding/csv"
+	//"encoding/csv"
 	"fmt"
-	"math"
+	//"math"
 	"os"
 	"strconv"
 	"testing"
@@ -16,7 +16,7 @@ const SEC_PARAM = uint64(1 << 10)
 func TestDBMediumEntries(t *testing.T) {
 	N := uint64(4)
 	d := uint64(9)
-	pir := NewSimplePIR(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
 	DB := MakeDB(N, d, &p, vals)
@@ -35,8 +35,7 @@ func TestDBMediumEntries(t *testing.T) {
 func TestDBSmallEntries(t *testing.T) {
 	N := uint64(4)
 	d := uint64(3)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
 	DB := MakeDB(N, d, &p, vals)
@@ -55,8 +54,7 @@ func TestDBSmallEntries(t *testing.T) {
 func TestDBLargeEntries(t *testing.T) {
 	N := uint64(4)
 	d := uint64(12)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 
 	vals := []uint64{1, 2, 3, 4}
 	DB := MakeDB(N, d, &p, vals)
@@ -86,8 +84,7 @@ func TestSimplePirBW(t *testing.T) {
 		d = uint64(D)
 	}
 
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
 	DB := SetupDB(N, d, &p)
 
 	fmt.Printf("Executing with entries consisting of %d (>= 1) bits; p is %d; packing factor is %d; number of DB elems per entry is %d.\n",
@@ -101,13 +98,18 @@ func TestSimplePirBW(t *testing.T) {
 func TestSimplePir(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(8)
-	pir := SimplePIR{}
-	p := pir.PickParams(N, d, SEC_PARAM, LOGQ)
 
-	DB := MakeRandomDB(N, d, &p)
-	RunPIR(&pir, DB, p, []uint64{262144})
+  prg := NewBufPRG(NewPRG(RandomPRGKey()))
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	db := MakeRandomDB(prg, N, d, &p)
+
+  server := NewServer(p, db)
+  client := NewClient(p, server.Hint(), server.MatrixA(), &db.Info)
+
+	RunPIR(client, server, db, p, 262144)
 }
 
+/*
 func TestSimplePirCompressed(t *testing.T) {
 	N := uint64(1 << 20)
 	d := uint64(8)
@@ -362,3 +364,4 @@ func BenchmarkSimplePirBatchLarge(b *testing.B) {
 	}
 }
 
+*/

@@ -34,7 +34,7 @@ func (p *Params) Round(x uint64) uint64 {
 	return v % p.P
 }
 
-func (p *Params) PickParams(doublepir bool, samples ...uint64) {
+func (p *Params) calcParams(doublepir bool, samples ...uint64) {
 	if p.N == 0 || p.Logq == 0 {
 		panic("Need to specify n and q!")
 	}
@@ -94,4 +94,36 @@ func (p *Params) GetBW() {
 
 	online_download := float64(p.L*p.Logq) / (8.0 * 1024.0)
 	fmt.Printf("\t\tOnline download: %d KB\n", uint64(online_download))
+}
+
+func PickParams(N, d, n, logq uint64) Params {
+	good_p := Params{}
+	found := false
+
+	// Iteratively refine p and DB dims, until find tight values
+	for mod_p := uint64(2); ; mod_p += 1 {
+		l, m := ApproxSquareDatabaseDims(N, d, mod_p)
+
+		p := Params{
+			N:    n,
+			Logq: logq,
+			L:    l,
+			M:    m,
+		}
+		p.calcParams(false, m)
+
+		if p.P < mod_p {
+			if !found {
+				panic("Error; should not happen")
+			}
+			good_p.PrintParams()
+			return good_p
+		}
+
+		good_p = p
+		found = true
+	}
+
+	panic("Cannot be reached")
+	return Params{}
 }

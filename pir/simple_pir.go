@@ -3,13 +3,11 @@ package pir
 // #cgo CFLAGS: -O3 -march=native
 // #include "pir.h"
 import "C"
-import "fmt"
+//import "fmt"
 
 type Server struct {
   params Params
-
   matrixA *Matrix
-  prg *BufPRGReader
 
   db *Database
   hint *Matrix
@@ -27,70 +25,48 @@ type Client struct {
 
 type Query = Matrix
 type Secret struct {
+  query *Query
   secret *Matrix
   index uint64
 }
 
 type Answer = Matrix
 
-func pickParams(N, d, n, logq uint64) Params {
-	good_p := Params{}
-	found := false
-
-	// Iteratively refine p and DB dims, until find tight values
-	for mod_p := uint64(2); ; mod_p += 1 {
-		l, m := ApproxSquareDatabaseDims(N, d, mod_p)
-
-		p := Params{
-			N:    n,
-			Logq: logq,
-			L:    l,
-			M:    m,
-		}
-		p.PickParams(false, m)
-
-		if p.P < mod_p {
-			if !found {
-				panic("Error; should not happen")
-			}
-			good_p.PrintParams()
-			return good_p
-		}
-
-		good_p = p
-		found = true
-	}
-
-	panic("Cannot be reached")
-	return Params{}
-}
-
-
-func NewServer(N, d, n, logq uint64) *Server {
-  s := new(Server)
-  s.params = pickParams(N, d, n, logq)
+func NewServer(params Params, db *Database) *Server {
   prg := NewBufPRG(NewPRG(RandomPRGKey()))
-	s.matrixA = MatrixRand(prg, p.M, p.N, p.Logq, 0)
-  return s
+  matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
+  return setupServer(params, db, matrixA)
 }
 
-func NewServerSeed(N, d, n, logq uint64, seed *PRGKey) *Server {
-  s := new(Server)
-  s.params = pickParams(N, d, n, logq)
-	s.prg = NewBufPRG(NewPRG(seed))
-	s.matrixA = MatrixRand(s.prg, p.M, p.N, p.Logq, 0)
-  return s
+func NewServerSeed(params Params, db *Database, seed *PRGKey) *Server {
+  prg := NewBufPRG(NewPRG(seed))
+  matrixA := MatrixRand(prg, params.M, params.N, params.Logq, 0)
+  return setupServer(params, db, matrixA)
 }
 
-func (s *Server) SetDatabase(DB *Database) {
-  s.db = DB.Copy()
-	s.hint = MatrixMul(s.db.Data, s.matrixA)
+func setupServer(params Params, db *Database, matrixA *Matrix) *Server {
+  s := &Server{
+    params: params,
+    matrixA: matrixA,
+    db: db.Copy(),
+    hint: MatrixMul(db.Data, matrixA),
+  }
 
 	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
 	// is memory-bandwidth-bound
 	s.db.Data.Add(s.params.P / 2)
 	s.db.Squish()
+
+  return s
+}
+
+func (s *Server) Hint() *Matrix {
+  return s.hint
+}
+
+func (s *Server) MatrixA() *Matrix {
+  return s.matrixA
 }
 
 func NewClient(params Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Client {
@@ -105,11 +81,11 @@ func NewClient(params Params, hint *Matrix, matrixA *Matrix, dbinfo *DBInfo) *Cl
 
 func (c *Client) Query(i uint64) (*Secret, *Query) {
   s := &Secret{
-    secret: MatrixRand(c.params.N, 1, c.params.Logq, 0),
+    secret: MatrixRand(c.prg, c.params.N, 1, c.params.Logq, 0),
     index: i,
   }
 
-	err := MatrixGaussian(c.params.M, 1)
+	err := MatrixGaussian(c.prg, c.params.M, 1)
 
 	query := MatrixMul(c.matrixA, s.secret)
 	query.MatrixAdd(err)
@@ -120,35 +96,34 @@ func (c *Client) Query(i uint64) (*Secret, *Query) {
 		query.AppendZeros(c.dbinfo.Squishing - (c.params.M % c.dbinfo.Squishing))
 	}
 
-	return secret, query
+  s.query = query.Copy()
+
+	return s, query
 }
 
-func (s *Server) Answer(query Query) *Answer {
-	ans := new(Matrix)
-	batch_sz := s.DB.Data.Rows / num_queries // how many rows of the database each query in the batch maps to
-
+func (s *Server) Answer(query *Query) *Answer {
   return MatrixMulVecPacked(s.db.Data,
-    q.Data,
+    query,
     s.db.Info.Basis,
     s.db.Info.Squishing)
 }
 
 func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
-	ratio := p.P / 2
+	ratio := c.params.P / 2
 	offset := uint64(0)
-	for j := uint64(0); j < p.M; j++ {
-		offset += ratio * query.Data[0].Get(j, 0)
+	for j := uint64(0); j < c.params.M; j++ {
+		offset += ratio * secret.query.Get(j, 0)
 	}
-	offset %= (1 << p.Logq)
-	offset = (1 << p.Logq) - offset
+	offset %= (1 << c.params.Logq)
+	offset = (1 << c.params.Logq) - offset
 
-	row := secret.index / p.M
+	row := secret.index / c.params.M
 	interm := MatrixMul(c.hint, secret.secret)
 	ans.MatrixSub(interm)
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
-	for j := row * info.Ne; j < (row+1)*info.Ne; j++ {
+	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
 		noised := uint64(ans.Data[j]) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
@@ -156,6 +131,6 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 	}
 	ans.MatrixAdd(interm)
 
-	return ReconstructElem(vals, secret.i, c.dbinfo)
+	return ReconstructElem(vals, secret.index, c.dbinfo)
 }
 

@@ -19,7 +19,7 @@ func (m *Matrix) Copy() *Matrix {
     Data: make([]C.Elem, len(m.Data)),
   }
 
-  copy(out.Data[:], m.data[:])
+  copy(out.Data[:], m.Data[:])
   return out
 }
 
