@@ -24,10 +24,6 @@ func (p *Params) Delta() uint64 {
 	return (1 << p.Logq) / (p.P)
 }
 
-func (p *Params) delta() uint64 {
-	return uint64(math.Ceil(float64(p.Logq) / math.Log2(float64(p.P))))
-}
-
 func (p *Params) Round(x uint64) uint64 {
 	Delta := p.Delta()
 	v := (x + Delta/2) / Delta
