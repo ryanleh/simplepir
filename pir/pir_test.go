@@ -2,7 +2,7 @@ package pir
 
 import (
 	//"encoding/csv"
-	//"fmt"
+	"fmt"
 	//"math"
 	//"os"
 	//"strconv"
@@ -11,6 +11,20 @@ import (
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
+
+// Run full PIR scheme (offline + online phases).
+func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {
+	secret, query := client.Query(i)
+	answer := server.Answer(query)
+
+	val := client.Recover(secret, answer)
+
+	if db.GetElem(i) != val {
+		fmt.Printf("(querying index %d -- row should be >= %d): Got %d instead of %d\n",
+			i, db.Data.Rows()/4, val, db.GetElem(i))
+		panic("Reconstruct failed!")
+	}
+}
 
 func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
@@ -63,7 +77,7 @@ func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 	server := NewServer(p, db)
 	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
 
-	RunPIR(client, server, db, p, index)
+	runPIR(client, server, db, p, index)
 }
 
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
@@ -75,7 +89,7 @@ func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 	server := NewServerSeed(p, db, seed)
 	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
 
-	RunPIR(client, server, db, p, index)
+	runPIR(client, server, db, p, index)
 }
 
 // Test SimplePIR correctness on DB with short entries.

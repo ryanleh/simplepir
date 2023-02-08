@@ -42,7 +42,7 @@ func (db *Database) Squish() {
 
 	db.Info.Basis = 10
 	db.Info.Squishing = 3
-	db.Info.Cols = db.Data.Cols
+	db.Info.Cols = db.Data.Cols()
 	db.Data.Squish(db.Info.Basis, db.Info.Squishing)
 
 	//fmt.Printf("After squishing, with compression factor %d: ", db.Info.Squishing)
@@ -78,13 +78,14 @@ func (db *Database) GetElem(i uint64) uint64 {
 		panic("Index out of range")
 	}
 
-	col := i % db.Data.Cols
-	row := i / db.Data.Cols
+  cols := db.Data.Cols()
+	col := i % cols
+	row := i / cols
 
 	if db.Info.Packing > 0 {
 		new_i := i / db.Info.Packing
-		col = new_i % db.Data.Cols
-		row = new_i / db.Data.Cols
+		col = new_i % cols
+		row = new_i / cols
 	}
 
 	var vals []uint64

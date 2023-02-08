@@ -90,7 +90,7 @@ func (c *Client) Query(i uint64) (*Secret, *Query) {
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
-	query.Data[i%c.params.M] += matrix.Elem(c.params.Delta())
+	query.AddAt(c.params.Delta(), i%c.params.M, 0)
 
 	// Pad the query to match the dimensions of the compressed DB
 	if c.params.M%c.dbinfo.Squishing != 0 {
@@ -125,7 +125,7 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := uint64(ans.Data[j]) + offset
+		noised := ans.Get(j, 0) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
