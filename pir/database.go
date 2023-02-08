@@ -173,10 +173,10 @@ func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = matrix.MatrixRand(prg, p.L, p.M, 0, p.P)
+	db.Data = matrix.Rand(prg, p.L, p.M, 0, p.P)
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.Sub(p.P / 2)
+	db.Data.SubUint64(p.P / 2)
 
 	return db
 }
@@ -184,7 +184,7 @@ func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Da
 func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = matrix.MatrixZeros(p.L, p.M)
+	db.Data = matrix.Zeros(p.L, p.M)
 
 	if uint64(len(vals)) != Num {
 		panic("Bad input db")
@@ -215,7 +215,7 @@ func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.Sub(p.P / 2)
+	db.Data.SubUint64(p.P / 2)
 
 	return db
 }

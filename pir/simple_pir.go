@@ -33,13 +33,13 @@ type Answer = matrix.Matrix
 
 func NewServer(params *Params, db *Database) *Server {
 	prg := NewRandomBufPRG()
-	matrixA := matrix.MatrixRand(prg, params.M, params.N, params.Logq, 0)
+	matrixA := matrix.Rand(prg, params.M, params.N, params.Logq, 0)
 	return setupServer(params, db, matrixA)
 }
 
 func NewServerSeed(params *Params, db *Database, seed *PRGKey) *Server {
 	prg := NewBufPRG(NewPRG(seed))
-	matrixA := matrix.MatrixRand(prg, params.M, params.N, params.Logq, 0)
+	matrixA := matrix.Rand(prg, params.M, params.N, params.Logq, 0)
 	return setupServer(params, db, matrixA)
 }
 
@@ -48,13 +48,13 @@ func setupServer(params *Params, db *Database, matrixA *matrix.Matrix) *Server {
 		params:  params,
 		matrixA: matrixA,
 		db:      db.Copy(),
-		hint:    matrix.MatrixMul(db.Data, matrixA),
+		hint:    matrix.Mul(db.Data, matrixA),
 	}
 
 	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
 	// is memory-bandwidth-bound
-	s.db.Data.Add(s.params.P / 2)
+	s.db.Data.AddUint64(s.params.P / 2)
 	s.db.Squish()
 
 	return s
@@ -82,14 +82,14 @@ func NewClient(params *Params, hint *matrix.Matrix, matrixA *matrix.Matrix, dbin
 
 func (c *Client) Query(i uint64) (*Secret, *Query) {
 	s := &Secret{
-		secret: matrix.MatrixRand(c.prg, c.params.N, 1, c.params.Logq, 0),
+		secret: matrix.Rand(c.prg, c.params.N, 1, c.params.Logq, 0),
 		index:  i,
 	}
 
-	err := matrix.MatrixGaussian(c.prg, c.params.M, 1)
+	err := matrix.Gaussian(c.prg, c.params.M, 1)
 
-	query := matrix.MatrixMul(c.matrixA, s.secret)
-	query.MatrixAdd(err)
+	query := matrix.Mul(c.matrixA, s.secret)
+	query.Add(err)
 	query.Data[i%c.params.M] += matrix.Elem(c.params.Delta())
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -103,7 +103,7 @@ func (c *Client) Query(i uint64) (*Secret, *Query) {
 }
 
 func (s *Server) Answer(query *Query) *Answer {
-	return matrix.MatrixMulVecPacked(s.db.Data,
+	return matrix.MulVecPacked(s.db.Data,
 		query,
 		s.db.Info.Basis,
 		s.db.Info.Squishing)
@@ -119,8 +119,8 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 	offset = (1 << c.params.Logq) - offset
 
 	row := secret.index / c.params.M
-	interm := matrix.MatrixMul(c.hint, secret.secret)
-	ans.MatrixSub(interm)
+	interm := matrix.Mul(c.hint, secret.secret)
+	ans.Sub(interm)
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
@@ -130,7 +130,7 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 		vals = append(vals, denoised)
 		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
-	ans.MatrixAdd(interm)
+	ans.Add(interm)
 
 	return ReconstructElem(vals, secret.index, c.dbinfo)
 }

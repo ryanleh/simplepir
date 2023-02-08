@@ -38,10 +38,10 @@ func (m *Matrix) Size() uint64 {
 }
 
 func (m *Matrix) AppendZeros(n uint64) {
-	m.Concat(MatrixZeros(n, 1))
+	m.Concat(Zeros(n, 1))
 }
 
-func MatrixNew(rows uint64, cols uint64) *Matrix {
+func New(rows uint64, cols uint64) *Matrix {
 	out := new(Matrix)
 	out.Rows = rows
 	out.Cols = cols
@@ -49,15 +49,8 @@ func MatrixNew(rows uint64, cols uint64) *Matrix {
 	return out
 }
 
-func MatrixNewNoAlloc(rows uint64, cols uint64) *Matrix {
-	out := new(Matrix)
-	out.Rows = rows
-	out.Cols = cols
-	return out
-}
-
-func MatrixRand(src IoRandSource, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
-	out := MatrixNew(rows, cols)
+func Rand(src IoRandSource, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
+	out := New(rows, cols)
 	m := big.NewInt(int64(mod))
 	if mod == 0 {
 		m = big.NewInt(1 << logmod)
@@ -72,16 +65,16 @@ func MatrixRand(src IoRandSource, rows uint64, cols uint64, logmod uint64, mod u
 	return out
 }
 
-func MatrixZeros(rows uint64, cols uint64) *Matrix {
-	out := MatrixNew(rows, cols)
+func Zeros(rows uint64, cols uint64) *Matrix {
+	out := New(rows, cols)
 	for i := 0; i < len(out.Data); i++ {
 		out.Data[i] = C.Elem(0)
 	}
 	return out
 }
 
-func MatrixGaussian(src IoRandSource, rows, cols uint64) *Matrix {
-	out := MatrixNew(rows, cols)
+func Gaussian(src IoRandSource, rows, cols uint64) *Matrix {
+	out := New(rows, cols)
 	for i := 0; i < len(out.Data); i++ {
 		out.Data[i] = C.Elem(GaussSample(src))
 	}
@@ -115,7 +108,7 @@ func (m *Matrix) Set(val, i, j uint64) {
 	m.Data[i*m.Cols+j] = C.Elem(val)
 }
 
-func (a *Matrix) MatrixAdd(b *Matrix) {
+func (a *Matrix) Add(b *Matrix) {
 	if (a.Cols != b.Cols) || (a.Rows != b.Rows) {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
 		panic("Dimension mismatch")
@@ -125,7 +118,7 @@ func (a *Matrix) MatrixAdd(b *Matrix) {
 	}
 }
 
-func (a *Matrix) Add(val uint64) {
+func (a *Matrix) AddUint64(val uint64) {
 	v := C.Elem(val)
 	for i := uint64(0); i < a.Cols*a.Rows; i++ {
 		a.Data[i] += v
@@ -139,7 +132,7 @@ func (a *Matrix) AddAt(val, i, j uint64) {
 	a.Set(a.Get(i, j)+val, i, j)
 }
 
-func (a *Matrix) MatrixSub(b *Matrix) {
+func (a *Matrix) Sub(b *Matrix) {
 	if (a.Cols != b.Cols) || (a.Rows != b.Rows) {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
 		panic("Dimension mismatch")
@@ -149,23 +142,23 @@ func (a *Matrix) MatrixSub(b *Matrix) {
 	}
 }
 
-func (a *Matrix) Sub(val uint64) {
+func (a *Matrix) SubUint64(val uint64) {
 	v := C.Elem(val)
 	for i := uint64(0); i < a.Cols*a.Rows; i++ {
 		a.Data[i] -= v
 	}
 }
 
-func MatrixMul(a *Matrix, b *Matrix) *Matrix {
+func Mul(a *Matrix, b *Matrix) *Matrix {
 	if b.Cols == 1 {
-		return MatrixMulVec(a, b)
+		return MulVec(a, b)
 	}
 	if a.Cols != b.Rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
 		panic("Dimension mismatch")
 	}
 
-	out := MatrixZeros(a.Rows, b.Cols)
+	out := Zeros(a.Rows, b.Cols)
 
 	outPtr := (*C.Elem)(&out.Data[0])
 	aPtr := (*C.Elem)(&a.Data[0])
@@ -179,7 +172,7 @@ func MatrixMul(a *Matrix, b *Matrix) *Matrix {
 	return out
 }
 
-func MatrixMulVec(a *Matrix, b *Matrix) *Matrix {
+func MulVec(a *Matrix, b *Matrix) *Matrix {
 	if (a.Cols != b.Rows) && (a.Cols+1 != b.Rows) && (a.Cols+2 != b.Rows) { // do not require exact match because of DB compression
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
 		panic("Dimension mismatch")
@@ -188,7 +181,7 @@ func MatrixMulVec(a *Matrix, b *Matrix) *Matrix {
 		panic("Second argument is not a vector")
 	}
 
-	out := MatrixNew(a.Rows, 1)
+	out := New(a.Rows, 1)
 
 	outPtr := (*C.Elem)(&out.Data[0])
 	aPtr := (*C.Elem)(&a.Data[0])
@@ -201,7 +194,7 @@ func MatrixMulVec(a *Matrix, b *Matrix) *Matrix {
 	return out
 }
 
-func MatrixMulVecPacked(a *Matrix, b *Matrix, basis, compression uint64) *Matrix {
+func MulVecPacked(a *Matrix, b *Matrix, basis, compression uint64) *Matrix {
 	if a.Cols*compression != b.Rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.Rows, a.Cols, b.Rows, b.Cols)
 		panic("Dimension mismatch")
@@ -213,7 +206,7 @@ func MatrixMulVecPacked(a *Matrix, b *Matrix, basis, compression uint64) *Matrix
 		panic("Must use hard-coded values!")
 	}
 
-	out := MatrixNew(a.Rows+8, 1)
+	out := New(a.Rows+8, 1)
 
 	outPtr := (*C.Elem)(&out.Data[0])
 	aPtr := (*C.Elem)(&a.Data[0])
@@ -247,7 +240,7 @@ func (a *Matrix) Concat(b *Matrix) {
 // group of 'delta' consecutive values as a single database element,
 // where each value uses 'basis' bits.
 func (m *Matrix) Squish(basis, delta uint64) {
-	n := MatrixZeros(m.Rows, (m.Cols+delta-1)/delta)
+	n := Zeros(m.Rows, (m.Cols+delta-1)/delta)
 
 	for i := uint64(0); i < n.Rows; i++ {
 		for j := uint64(0); j < n.Cols; j++ {
@@ -255,26 +248,6 @@ func (m *Matrix) Squish(basis, delta uint64) {
 				if delta*j+k < m.Cols {
 					val := m.Get(i, delta*j+k)
 					n.Data[i*n.Cols+j] += C.Elem(val << (k * basis))
-				}
-			}
-		}
-	}
-
-	m.Cols = n.Cols
-	m.Rows = n.Rows
-	m.Data = n.Data
-}
-
-// Computes the inverse operation of Squish(.)
-func (m *Matrix) Unsquish(basis, delta, cols uint64) {
-	n := MatrixZeros(m.Rows, cols)
-	mask := uint64((1 << basis) - 1)
-
-	for i := uint64(0); i < m.Rows; i++ {
-		for j := uint64(0); j < m.Cols; j++ {
-			for k := uint64(0); k < delta; k++ {
-				if j*delta+k < cols {
-					n.Data[i*n.Cols+j*delta+k] = C.Elem(((m.Get(i, j)) >> (k * basis)) & mask)
 				}
 			}
 		}
@@ -297,51 +270,18 @@ func (m *Matrix) DropLastRows(n uint64) {
 	m.Data = m.Data[:(m.Rows * m.Cols)]
 }
 
-func (m *Matrix) SelectColumn(i uint64) *Matrix {
-	if m.Cols == 1 {
-		return m
-	}
-
-	col := MatrixNew(m.Rows, 1)
-	for j := uint64(0); j < m.Rows; j++ {
-		col.Data[j] = m.Data[j*m.Cols+i]
-	}
-	return col
-}
-
-func (m *Matrix) SelectRows(offset, num_rows uint64) *Matrix {
-	if (offset == 0) && (num_rows == m.Rows) {
-		return m
-	}
-
-	if offset > m.Rows {
-		panic("Asking for bad offset!")
-	}
-
-	if offset+num_rows <= m.Rows {
-		m2 := MatrixNewNoAlloc(num_rows, m.Cols)
-		m2.Data = m.Data[(offset * m.Cols) : (offset+num_rows)*m.Cols]
-		return m2
-	}
-
-	m2 := MatrixNewNoAlloc(m.Rows-offset, m.Cols)
-	m2.Data = m.Data[(offset * m.Cols) : (m.Rows)*m.Cols]
-
-	return m2
-}
-
 func (m *Matrix) RowsDeepCopy(offset, num_rows uint64) *Matrix {
 	if offset+num_rows > m.Rows {
 		panic("Requesting too many rows")
 	}
 
 	if offset+num_rows <= m.Rows {
-		m2 := MatrixNew(num_rows, m.Cols)
+		m2 := New(num_rows, m.Cols)
 		copy(m2.Data, m.Data[(offset*m.Cols):((offset+num_rows)*m.Cols)])
 		return m2
 	}
 
-	m2 := MatrixNew(m.Rows-offset, m.Cols)
+	m2 := New(m.Rows-offset, m.Cols)
 	copy(m2.Data, m.Data[(offset*m.Cols):(m.Rows)*m.Cols])
 	return m2
 }
