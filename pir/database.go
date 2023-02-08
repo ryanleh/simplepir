@@ -96,42 +96,6 @@ func (db *Database) GetElem(i uint64) uint64 {
 	return ReconstructElem(vals, i, db.Info)
 }
 
-// Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is
-// the number of Z_p elements per db entry determined by row_length and p.
-func ApproxSquareDatabaseDims(N, row_length, p uint64) (uint64, uint64) {
-	db_elems, elems_per_entry, _ := Num_DB_entries(N, row_length, p)
-	l := uint64(math.Floor(math.Sqrt(float64(db_elems))))
-
-	rem := l % elems_per_entry
-	if rem != 0 {
-		l += elems_per_entry - rem
-	}
-
-	m := uint64(math.Ceil(float64(db_elems) / float64(l)))
-
-	return l, m
-}
-
-// Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is
-// the number of Z_p elements per db entry determined by row_length and p, and m >=
-// lower_bound_m.
-func ApproxDatabaseDims(N, row_length, p, lower_bound_m uint64) (uint64, uint64) {
-	l, m := ApproxSquareDatabaseDims(N, row_length, p)
-	if m >= lower_bound_m {
-		return l, m
-	}
-
-	m = lower_bound_m
-	db_elems, elems_per_entry, _ := Num_DB_entries(N, row_length, p)
-	l = uint64(math.Ceil(float64(db_elems) / float64(m)))
-
-	rem := l % elems_per_entry
-	if rem != 0 {
-		l += elems_per_entry - rem
-	}
-
-	return l, m
-}
 
 func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 	if (num == 0) || (row_length == 0) {
