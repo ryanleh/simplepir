@@ -1,5 +1,5 @@
 
-#include "pir.h"
+#include "matrix.h"
 #include <stdio.h>
 
 // Hard-coded, to allow for compiler optimizations:

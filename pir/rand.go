@@ -114,6 +114,10 @@ func (b *BufPRGReader) RandInt(mod *big.Int) *big.Int {
 	return out
 }
 
+func (b *BufPRGReader) Read(p []byte) (int, error) {
+	return b.stream.Read(p)
+}
+
 func (b *BufPRGReader) Int63() int64 {
 	uout := b.Uint64()
 	uout = uout % (1 << 63)

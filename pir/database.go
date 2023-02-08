@@ -3,6 +3,8 @@ package pir
 import "math"
 import "fmt"
 
+import "github.com/henrycg/simplepir/matrix"
+
 type DBInfo struct {
 	Num        uint64 // number of db entries.
 	Row_length uint64 // number of bits per db entry.
@@ -24,7 +26,7 @@ type DBInfo struct {
 
 type Database struct {
 	Info *DBInfo
-	Data *Matrix
+	Data *matrix.Matrix
 }
 
 func (db *Database) Copy() *Database {
@@ -171,7 +173,7 @@ func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = MatrixRand(prg, p.L, p.M, 0, p.P)
+	db.Data = matrix.MatrixRand(prg, p.L, p.M, 0, p.P)
 
 	// Map db elems to [-p/2; p/2]
 	db.Data.Sub(p.P / 2)
@@ -182,7 +184,7 @@ func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Da
 func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = MatrixZeros(p.L, p.M)
+	db.Data = matrix.MatrixZeros(p.L, p.M)
 
 	if uint64(len(vals)) != Num {
 		panic("Bad input db")

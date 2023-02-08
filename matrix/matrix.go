@@ -1,10 +1,20 @@
-package pir
+package matrix
 
 // #cgo CFLAGS: -O3 -march=native
-// #include "pir.h"
+// #include "matrix.h"
 import "C"
+import "crypto/rand"
+import mrand "math/rand"
 import "fmt"
+import "io"
 import "math/big"
+
+type Elem = C.Elem
+
+type IoRandSource interface {
+    io.Reader
+    mrand.Source64
+}
 
 type Matrix struct {
 	Rows uint64
@@ -46,14 +56,18 @@ func MatrixNewNoAlloc(rows uint64, cols uint64) *Matrix {
 	return out
 }
 
-func MatrixRand(rand *BufPRGReader, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
+func MatrixRand(src IoRandSource, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix {
 	out := MatrixNew(rows, cols)
 	m := big.NewInt(int64(mod))
 	if mod == 0 {
 		m = big.NewInt(1 << logmod)
 	}
 	for i := 0; i < len(out.Data); i++ {
-		out.Data[i] = C.Elem(rand.RandInt(m).Uint64())
+    v,err := rand.Int(src, m)
+    if err != nil {
+      panic("Randomness error")
+    }
+		out.Data[i] = C.Elem(v.Uint64())
 	}
 	return out
 }
@@ -66,10 +80,10 @@ func MatrixZeros(rows uint64, cols uint64) *Matrix {
 	return out
 }
 
-func MatrixGaussian(prg *BufPRGReader, rows, cols uint64) *Matrix {
+func MatrixGaussian(src IoRandSource, rows, cols uint64) *Matrix {
 	out := MatrixNew(rows, cols)
 	for i := 0; i < len(out.Data); i++ {
-		out.Data[i] = C.Elem(GaussSample(prg))
+		out.Data[i] = C.Elem(GaussSample(src))
 	}
 	return out
 }
@@ -228,73 +242,6 @@ func (a *Matrix) Concat(b *Matrix) {
 	a.Data = append(a.Data, b.Data...)
 }
 
-// Represent each element in the database with 'delta' elements in Z_'mod'.
-// Then, map the database elements from [0, mod] to [-mod/2, mod/2].
-func (m *Matrix) Expand(mod uint64, delta uint64) {
-	n := MatrixNew(m.Rows*delta, m.Cols)
-	modulus := C.Elem(mod)
-
-	for i := uint64(0); i < m.Rows; i++ {
-		for j := uint64(0); j < m.Cols; j++ {
-			val := m.Data[i*m.Cols+j]
-			for f := uint64(0); f < delta; f++ {
-				new_val := val % modulus
-				n.Data[(i*delta+f)*m.Cols+j] = new_val - modulus/2
-				val /= modulus
-			}
-		}
-	}
-
-	m.Cols = n.Cols
-	m.Rows = n.Rows
-	m.Data = n.Data
-}
-
-func (m *Matrix) TransposeAndExpandAndConcatColsAndSquish(mod, delta, concat, basis, d uint64) {
-	if m.Rows%concat != 0 {
-		panic("Bad input!")
-	}
-
-	n := MatrixZeros(m.Cols*delta*concat, (m.Rows/concat+d-1)/d)
-
-	for j := uint64(0); j < m.Rows; j++ {
-		for i := uint64(0); i < m.Cols; i++ {
-			val := uint64(m.Data[i+j*m.Cols])
-			for f := uint64(0); f < delta; f++ {
-				new_val := val % mod
-				r := (i*delta + f) + m.Cols*delta*(j%concat)
-				c := j / concat
-				n.Data[r*n.Cols+c/d] += C.Elem(new_val << (basis * (c % d)))
-				val /= mod
-			}
-		}
-	}
-
-	m.Cols = n.Cols
-	m.Rows = n.Rows
-	m.Data = n.Data
-}
-
-// Computes the inverse operations of Expand(.)
-func (m *Matrix) Contract(mod uint64, delta uint64) {
-	n := MatrixZeros(m.Rows/delta, m.Cols)
-
-	for i := uint64(0); i < n.Rows; i++ {
-		for j := uint64(0); j < n.Cols; j++ {
-			var vals []uint64
-			for f := uint64(0); f < delta; f++ {
-				new_val := uint64(m.Data[(i*delta+f)*m.Cols+j])
-				vals = append(vals, (new_val+mod/2)%mod)
-			}
-			n.Data[i*m.Cols+j] += C.Elem(Reconstruct_from_base_p(mod, vals))
-		}
-	}
-
-	m.Cols = n.Cols
-	m.Rows = n.Rows
-	m.Data = n.Data
-}
-
 // Compresses the matrix to store it in 'packed' form.
 // Specifically, this method squishes the matrix by representing each
 // group of 'delta' consecutive values as a single database element,
@@ -338,9 +285,10 @@ func (m *Matrix) Unsquish(basis, delta, cols uint64) {
 	m.Data = n.Data
 }
 
-func (m *Matrix) Round(p Params) {
+func (m *Matrix) Round(round_to uint64, mod uint64) {
 	for i := uint64(0); i < m.Rows*m.Cols; i++ {
-		m.Data[i] = C.Elem(p.Round(uint64(m.Data[i])))
+    v := (uint64(m.Data[i]) + round_to/2) / round_to
+		m.Data[i] = C.Elem(v % mod)
 	}
 }
 
@@ -396,29 +344,6 @@ func (m *Matrix) RowsDeepCopy(offset, num_rows uint64) *Matrix {
 	m2 := MatrixNew(m.Rows-offset, m.Cols)
 	copy(m2.Data, m.Data[(offset*m.Cols):(m.Rows)*m.Cols])
 	return m2
-}
-
-func (m *Matrix) ConcatCols(n uint64) {
-	if n == 1 {
-		return
-	}
-
-	if m.Cols%n != 0 {
-		panic("n does not divide num cols")
-	}
-
-	m2 := MatrixNew(m.Rows*n, m.Cols/n)
-	for i := uint64(0); i < m.Rows; i++ {
-		for j := uint64(0); j < m.Cols; j++ {
-			col := j / n
-			row := i + m.Rows*(j%n)
-			m2.Data[row*m2.Cols+col] = m.Data[i*m.Cols+j]
-		}
-	}
-
-	m.Cols = m2.Cols
-	m.Rows = m2.Rows
-	m.Data = m2.Data
 }
 
 func (m *Matrix) Dim() {

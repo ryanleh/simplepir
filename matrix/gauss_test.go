@@ -1,4 +1,4 @@
-package pir
+package matrix
 
 import (
 	//"log"

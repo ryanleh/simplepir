@@ -1,4 +1,8 @@
-package pir
+package matrix
+
+import (
+  mrand "math/rand"
+)
 
 var cdf_table = [...]float64{
 	0.5, 0.987867, 0.952345, 0.895957, 0.822578, 0.736994, 0.644389, 0.549831, 0.457833, 0.372034,
@@ -26,21 +30,21 @@ var cdf_table = [...]float64{
 // sampler included in his dgs library:
 //
 //	https://github.com/malb/dgs
-func GaussSample(prg *BufPRGReader) int64 {
-	mrand := prg.MathRand()
+func GaussSample(src mrand.Source) int64 {
+	math_src := mrand.New(src)
 
 	var x int64
 	var y float64
 	for {
-		x = int64(mrand.Intn(len(cdf_table)))
-		y = mrand.Float64()
+		x = int64(math_src.Intn(len(cdf_table)))
+		y = math_src.Float64()
 
 		if y < cdf_table[x] {
 			break
 		}
 	}
 
-	if mrand.Uint64()%2 == 0 {
+  if math_src.Uint64()%2 == 0 {
 		x = -x
 	}
 
