@@ -26,6 +26,46 @@ func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {
 	}
 }
 
+func runPIRmany(client *Client, server *Server, db *Database, p *Params, i uint64) {
+	secret, query := client.Query(i)
+	answer := server.Answer(query)
+
+	vals := client.RecoverMany(secret, answer)
+
+	col_index := i % p.M
+	for row := uint64(0); row < uint64(len(vals)); row++ {
+		index := row * p.M + col_index
+		if db.GetElem(index) != vals[row] {
+			fmt.Printf("Querying index %d: Got %d instead of %d\n",
+				   index, vals[row], db.GetElem(index))
+			panic("Reconstruct failed!")
+		}
+	}
+}
+
+func runLHE(client *Client, server *Server, db *Database, p *Params, arr []uint64) {
+	secret, query := client.QueryLHE(arr)
+	answer := server.Answer(query)
+
+	vals := client.RecoverManyLHE(secret, answer)
+
+	at := uint64(0)
+	for i := 0; i < len(vals); i++ {
+		should_be := uint64(0)
+		for j := uint64(0); (j < uint64(len(arr))) && (at < db.Info.Num); j++ {
+			should_be += arr[j] * db.GetElem(at)
+			at += 1
+		}
+		should_be %= p.P
+
+		if should_be != vals[i] {
+			fmt.Printf("Row %d: Got %d instead of %d (mod %d)\n",
+				    i, vals[i], should_be, p.P)
+			panic("Reconstruct failed!")
+		}
+	}
+}
+
 func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
 	db := NewDatabase(N, d, p, vals)
@@ -80,6 +120,30 @@ func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 	runPIR(client, server, db, p, index)
 }
 
+func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
+	prg := NewRandomBufPRG()
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	db := NewDatabaseRandom(prg, N, d, p)
+
+	server := NewServer(p, db)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	runPIRmany(client, server, db, p, index)
+}
+
+func testLHE(t *testing.T, N uint64, d uint64) {
+	prg := NewRandomBufPRG()
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	p.P = PrevPowerOfTwo(p.P)
+	db := NewDatabaseRandom(prg, N, d, p)
+
+	server := NewServer(p, db)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	arr := RandArray(p.M, p.P)
+	runLHE(client, server, db, p, arr)
+}
+
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := NewRandomBufPRG()
 	p := PickParams(N, d, SEC_PARAM, LOGQ)
@@ -92,13 +156,55 @@ func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 	runPIR(client, server, db, p, index)
 }
 
+func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64) {
+	prg := NewRandomBufPRG()
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	db := NewDatabaseRandom(prg, N, d, p)
+
+	seed := RandomPRGKey()
+	server := NewServerSeed(p, db, seed)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	runPIRmany(client, server, db, p, index)
+}
+
+func testLHECompressed(t *testing.T, N uint64, d uint64) {
+	prg := NewRandomBufPRG()
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	p.P = PrevPowerOfTwo(p.P)
+	db := NewDatabaseRandom(prg, N, d, p)
+
+	seed := RandomPRGKey()
+	server := NewServerSeed(p, db, seed)
+	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+
+	arr := RandArray(p.M, p.P)
+	runLHE(client, server, db, p, arr)
+}
+
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir(t *testing.T) {
 	testSimplePir(t, uint64(1<<20), uint64(8), 262144)
 }
 
+func TestSimplePirMany(t *testing.T) {
+	testSimplePirMany(t, uint64(1<<20), uint64(8), 262144)
+}
+
+func TestLHE(t *testing.T) {
+	testLHE(t, uint64(1<<20), uint64(9))
+}
+
 func TestSimplePirCompressed(t *testing.T) {
 	testSimplePirCompressed(t, uint64(1<<20), uint64(8), 262144)
+}
+
+func TestSimplePirCompressedMany(t *testing.T) {
+	testSimplePirCompressedMany(t, uint64(1<<20), uint64(8), 262144)
+}
+
+func TestLHECompressed(t *testing.T) {
+	testLHECompressed(t, uint64(1<<20), uint64(9))
 }
 
 // Test SimplePIR correctness on DB with long entries
@@ -115,6 +221,22 @@ func TestSimplePirBigDB(t *testing.T) {
 	testSimplePir(t, uint64(1<<25), uint64(7), 0)
 }
 
+func TestSimplePirBigDBmany(t *testing.T) {
+	testSimplePirMany(t, uint64(1<<25), uint64(7), 0)
+}
+
+func TestLHEBigDB(t *testing.T) {
+	testLHE(t, uint64(1<<25), uint64(9))
+}
+
 func TestSimplePirBigDBCompressed(t *testing.T) {
 	testSimplePirCompressed(t, uint64(1<<25), uint64(7), 0)
+}
+
+func TestSimplePirBigDBCompressedMany(t *testing.T) {
+	testSimplePirCompressedMany(t, uint64(1<<25), uint64(7), 0)
+}
+
+func TestLHEBigDBCompressed(t *testing.T) {
+	testLHECompressed(t, uint64(1<<25), uint64(9))
 }

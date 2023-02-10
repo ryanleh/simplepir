@@ -78,11 +78,11 @@ func (db *Database) GetElem(i uint64) uint64 {
 		panic("Index out of range")
 	}
 
-  cols := db.Data.Cols()
+	cols := db.Data.Cols()
 	col := i % cols
 	row := i / cols
 
-	if db.Info.Packing > 0 {
+	if db.Info.Packing > 1 {
 		new_i := i / db.Info.Packing
 		col = new_i % cols
 		row = new_i / cols
@@ -139,6 +139,7 @@ func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Da
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
 	db.Data = matrix.Rand(prg, p.L, p.M, 0, p.P)
+	db.Info.Num = p.M * p.L
 
 	// Map db elems to [-p/2; p/2]
 	db.Data.SubUint64(p.P / 2)

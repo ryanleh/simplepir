@@ -1,6 +1,7 @@
 package pir
 
 import "math"
+import "math/rand"
 import "fmt"
 
 // Returns the i-th elem in the representation of m in base p.
@@ -47,3 +48,27 @@ func Num_DB_entries(N, row_length, p uint64) (uint64, uint64, uint64) {
 	ne := Compute_num_entries_base_p(p, row_length)
 	return N * ne, ne, 0
 }
+
+func RandArray(length, mod uint64) []uint64 {
+	res := make([]uint64, length)
+	
+	for i := 0; i < len(res); i++ {
+		res[i] = rand.Uint64() % mod
+	}
+
+	return res
+}
+
+func PrevPowerOfTwo(v uint64) uint64 {
+	if v == 0 {
+		return 0
+	}
+
+	digits := 0
+	for ; v > 0; v = (v >> 1) {
+		digits += 1
+	}
+
+	return uint64(1 << (digits-1))
+}
+
