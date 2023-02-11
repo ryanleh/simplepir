@@ -327,6 +327,18 @@ func (m Matrix) MarshalBinary() ([]byte, error) {
 
 func (m Matrix) UnmarshalBinary(data []byte) error {
 	b := bytes.NewBuffer(data)
-	_, err := fmt.Fscanln(b, &m.rows, &m.cols, &m.data)
-	return err
+	_, err := fmt.Fscan(b, &m.rows, &m.cols)
+	if err != nil {
+		return err
+	}
+
+	m.data = make([]C.Elem, m.rows * m.cols)
+	for i := uint64(0); i < m.rows * m.cols; i++ {
+		_, err := fmt.Fscan(b, &m.data[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
