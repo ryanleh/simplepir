@@ -116,13 +116,7 @@ func PickParams(N, d, n, logq uint64) *Params {
 	for mod_p := uint64(2); ; mod_p += 1 {
 		l, m := approxSquareDatabaseDims(N, d, mod_p)
 
-		p := &Params{
-			N:    n,
-			Logq: logq,
-			L:    l,
-			M:    m,
-		}
-		p.calcParams(false, m)
+		p := PickParamsGivenDimensions(l, m, n, logq)
 
 		if p.P < mod_p {
 			if !found {
@@ -138,4 +132,15 @@ func PickParams(N, d, n, logq uint64) *Params {
 
 	panic("Cannot be reached")
 	return nil
+}
+
+func PickParamsGivenDimensions(l, m, n, logq uint64) *Params {
+	p := &Params{
+		N:    n,
+                Logq: logq,
+                L:    l,
+                M:    m,
+	}
+        p.calcParams(false, m)
+        return p
 }
