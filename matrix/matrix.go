@@ -320,7 +320,7 @@ func (m *Matrix) PrintStart() {
 	}
 }
 
-func (m Matrix) GobEncode() ([]byte, error) {
+func (m Matrix) MarshalBinary() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	encoder := gob.NewEncoder(buf)
 	err1 := encoder.Encode(m.rows)
@@ -334,7 +334,7 @@ func (m Matrix) GobEncode() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (m Matrix) GobDecode(buf []byte) error {
+func (m Matrix) UnmarshalBinary(buf []byte) error {
 	b := bytes.NewBuffer(buf)
 	decoder := gob.NewDecoder(b)
 	err1 := decoder.Decode(&m.rows)
