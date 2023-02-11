@@ -239,3 +239,15 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 
 	return out
 }
+
+func (c *Client) GetM() uint64 {
+	return c.params.M
+}
+
+func (c *Client) GetL() uint64 {
+	return c.params.L
+}
+
+func (c *Client) GetP() uint64 {
+	return c.params.P
+}
