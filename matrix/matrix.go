@@ -8,6 +8,8 @@ import mrand "math/rand"
 import "fmt"
 import "io"
 import "math/big"
+import "bytes"
+import "encoding/gob"
 
 type Elem = C.Elem
 
@@ -316,4 +318,32 @@ func (m *Matrix) PrintStart() {
 		}
 		fmt.Printf("\n")
 	}
+}
+
+func (m *Matrix) GobEncode() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	encoder := gob.NewEncoder(buf)
+	err1 := encoder.Encode(m.rows)
+	err2 := encoder.Encode(m.cols)
+	err3 := encoder.Encode(m.data)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		panic("Gob encoding error")
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (m *Matrix) GobDecode(buf []byte) error {
+	b := bytes.NewBuffer(buf)
+	decoder := gob.NewDecoder(b)
+	err1 := decoder.Decode(&m.rows)
+	err2 := decoder.Decode(&m.cols)
+	err3 := decoder.Decode(&m.data)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		panic("Gob decoding error")
+	}
+
+	return nil
 }
