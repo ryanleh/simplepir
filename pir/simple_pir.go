@@ -72,6 +72,14 @@ func (s *Server) MatrixA() *matrix.Matrix {
 	return s.matrixA
 }
 
+func (s *Server) Params() *Params {
+	return s.params
+}
+
+func (s *Server) DBInfo() *DBInfo {
+	return s.db.Info
+}
+
 func NewClient(params *Params, hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Client {
 	return &Client{
 		prg: NewRandomBufPRG(),
