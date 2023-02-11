@@ -9,7 +9,6 @@ import "fmt"
 import "io"
 import "math/big"
 import "bytes"
-import "encoding/gob"
 
 type Elem = C.Elem
 
@@ -321,29 +320,13 @@ func (m *Matrix) PrintStart() {
 }
 
 func (m Matrix) MarshalBinary() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	encoder := gob.NewEncoder(buf)
-	err1 := encoder.Encode(m.rows)
-	err2 := encoder.Encode(m.cols)
-	err3 := encoder.Encode(m.data)
-
-	if err1 != nil || err2 != nil || err3 != nil {
-		panic("Gob encoding error")
-	}
-
-	return buf.Bytes(), nil
+	var b bytes.Buffer
+	fmt.Fprintln(&b, m.rows, m.cols, m.data)
+	return b.Bytes(), nil
 }
 
-func (m Matrix) UnmarshalBinary(buf []byte) error {
-	b := bytes.NewBuffer(buf)
-	decoder := gob.NewDecoder(b)
-	err1 := decoder.Decode(&m.rows)
-	err2 := decoder.Decode(&m.cols)
-	err3 := decoder.Decode(&m.data)
-
-	if err1 != nil || err2 != nil || err3 != nil {
-		panic("Gob decoding error")
-	}
-
-	return nil
+func (m Matrix) UnmarshalBinary(data []byte) error {
+	b := bytes.NewBuffer(data)
+	_, err := fmt.Fscanln(b, &m.rows, &m.cols, &m.data)
+	return err
 }
