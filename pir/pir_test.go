@@ -3,14 +3,44 @@ package pir
 import (
 	//"encoding/csv"
 	"fmt"
+	"encoding/gob"
+	"bytes"
 	//"math"
 	//"os"
 	//"strconv"
 	"testing"
+	"github.com/henrycg/simplepir/matrix"
 )
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
+
+func TestGob(t *testing.T) {
+	prg := NewRandomBufPRG()
+	m := matrix.Gaussian(prg, 5, 5)
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(m)
+	if err != nil {
+		fmt.Println(err)
+		panic("Encoding failed")
+	}
+
+	dec := gob.NewDecoder(&buf)
+	var n matrix.Matrix
+	err = dec.Decode(&n)
+	if err != nil {
+		fmt.Println(err)
+		panic("Decoding failed")
+	}
+
+	if ! m.Equals(&n) {
+		m.Print()
+		n.Print()
+		panic("Objects are not equal")
+	}
+}
 
 // Run full PIR scheme (offline + online phases).
 func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {

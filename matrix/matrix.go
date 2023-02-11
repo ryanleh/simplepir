@@ -9,6 +9,7 @@ import "fmt"
 import "io"
 import "math/big"
 import "bytes"
+import "reflect"
 
 type Elem = C.Elem
 
@@ -319,22 +320,35 @@ func (m *Matrix) PrintStart() {
 	}
 }
 
+func (m *Matrix) Equals(n *Matrix) bool {
+	if m.Cols() != n.Cols() {
+		return false
+	}
+	if m.Rows() != n.Rows() {
+		return false
+	}
+	return reflect.DeepEqual(m.data, n.data)
+}
+
 func (m Matrix) MarshalBinary() ([]byte, error) {
 	var b bytes.Buffer
-	fmt.Fprintln(&b, m.rows, m.cols, m.data)
+	fmt.Fprintf(&b, "%d %d ", m.rows, m.cols)
+	for _, v := range m.data {
+		fmt.Fprintf(&b, "%d ", v)
+	}
 	return b.Bytes(), nil
 }
 
-func (m Matrix) UnmarshalBinary(data []byte) error {
+func (m *Matrix) UnmarshalBinary(data []byte) error {
 	b := bytes.NewBuffer(data)
-	_, err := fmt.Fscan(b, &m.rows, &m.cols)
+	_, err := fmt.Fscanf(b, "%d %d ", &m.rows, &m.cols)
 	if err != nil {
 		return err
 	}
 
 	m.data = make([]C.Elem, m.rows * m.cols)
 	for i := uint64(0); i < m.rows * m.cols; i++ {
-		_, err := fmt.Fscan(b, &m.data[i])
+		_, err := fmt.Fscanf(b, "%d ", &m.data[i])
 		if err != nil {
 			return err
 		}
