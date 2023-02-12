@@ -80,17 +80,21 @@ func runLHE(client *Client, server *Server, db *Database, p *Params, arr []uint6
 	vals := client.RecoverManyLHE(secret, answer)
 
 	at := uint64(0)
+	mod := p.P
+	if (1 << db.Info.Row_length) < mod {
+		mod = (1 << db.Info.Row_length)
+	}
 	for i := 0; i < len(vals); i++ {
 		should_be := uint64(0)
 		for j := uint64(0); (j < uint64(len(arr))) && (at < db.Info.Num); j++ {
 			should_be += arr[j] * db.GetElem(at)
 			at += 1
 		}
-		should_be %= p.P
+		should_be %= mod
 
 		if should_be != vals[i] {
 			fmt.Printf("Row %d: Got %d instead of %d (mod %d)\n",
-				    i, vals[i], should_be, p.P)
+				    i, vals[i], should_be, mod)
 			panic("Reconstruct failed!")
 		}
 	}
@@ -222,7 +226,7 @@ func TestSimplePirMany(t *testing.T) {
 }
 
 func TestLHE(t *testing.T) {
-	testLHE(t, uint64(1<<20), uint64(9))
+	testLHE(t, uint64(1<<20), uint64(8))
 }
 
 func TestSimplePirCompressed(t *testing.T) {

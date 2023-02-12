@@ -119,7 +119,7 @@ func (c *Client) QueryLHE(arr []uint64) (*SecretLHE, *Query) {
 		panic("Parameter mismatch")
 	}
 
-	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.Row_length) != c.dbinfo.P) {
+	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.Row_length) > c.dbinfo.P) {
 		panic("Not yet supported.")
 	}
 
@@ -221,6 +221,16 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 		panic("Not yet supported")
 	}
 
+	mod := uint64(1 << c.dbinfo.Row_length)
+	if mod > c.params.P {
+		if mod % c.params.P != 0 {
+			panic("Not yet supported")
+		}
+		mod = c.params.P
+	} else if c.params.P % mod != 0 {
+		panic("Not yet supported")
+	}
+
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.params.M; j++ {
@@ -241,7 +251,7 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 	for row := uint64(0); row < ans.Rows(); row++ {
 		noised := ans.Get(row, 0) + offset
 		denoised := c.params.Round(noised)
-		out[row] = (denoised + ratio * norm) % c.params.P
+		out[row] = (denoised + ratio * norm) % mod
 	}
 	ans.Add(interm)
 
