@@ -138,8 +138,20 @@ func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
 func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
 	db := new(Database)
 	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = matrix.Rand(prg, p.L, p.M, 0, p.P)
-	db.Info.Num = p.M * p.L
+
+	mod := p.P
+	if ((1 << row_length) < mod) && (db.Info.Packing == 1) {
+		mod = (1 << row_length)
+	}
+
+	db.Data = matrix.Rand(prg, p.L, p.M, 0, mod)
+
+	// clear overflow cols
+	row := p.L - 1
+	for i := Num; i < p.L * p.M; i++ {
+		col := i % p.M
+		db.Data.Set(0, row, col)
+	}
 
 	// Map db elems to [-p/2; p/2]
 	db.Data.SubUint64(p.P / 2)

@@ -3,44 +3,14 @@ package pir
 import (
 	//"encoding/csv"
 	"fmt"
-	"encoding/gob"
-	"bytes"
 	//"math"
 	//"os"
 	//"strconv"
 	"testing"
-	"github.com/henrycg/simplepir/matrix"
 )
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
-
-func TestGob(t *testing.T) {
-	prg := NewRandomBufPRG()
-	m := matrix.Gaussian(prg, 5, 5)
-
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	err := enc.Encode(m)
-	if err != nil {
-		fmt.Println(err)
-		panic("Encoding failed")
-	}
-
-	dec := gob.NewDecoder(&buf)
-	var n matrix.Matrix
-	err = dec.Decode(&n)
-	if err != nil {
-		fmt.Println(err)
-		panic("Decoding failed")
-	}
-
-	if ! m.Equals(&n) {
-		m.Print()
-		n.Print()
-		panic("Objects are not equal")
-	}
-}
 
 // Run full PIR scheme (offline + online phases).
 func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {
@@ -81,9 +51,6 @@ func runLHE(client *Client, server *Server, db *Database, p *Params, arr []uint6
 
 	at := uint64(0)
 	mod := p.P
-	if (1 << db.Info.Row_length) < mod {
-		mod = (1 << db.Info.Row_length)
-	}
 	for i := 0; i < len(vals); i++ {
 		should_be := uint64(0)
 		for j := uint64(0); (j < uint64(len(arr))) && (at < db.Info.Num); j++ {
@@ -226,7 +193,15 @@ func TestSimplePirMany(t *testing.T) {
 }
 
 func TestLHE(t *testing.T) {
+	testLHE(t, uint64(1<<20), uint64(9))
+}
+
+func TestLHE2(t *testing.T) {
 	testLHE(t, uint64(1<<20), uint64(8))
+}
+
+func TestLHE3(t *testing.T) {
+	testLHE(t, uint64(1<<20), uint64(6))
 }
 
 func TestSimplePirCompressed(t *testing.T) {

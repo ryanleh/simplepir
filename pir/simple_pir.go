@@ -2,7 +2,6 @@ package pir
 
 import "github.com/henrycg/simplepir/matrix"
 
-
 type Server struct {
 	params  *Params
 	matrixA *matrix.Matrix
@@ -173,7 +172,7 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
-	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
+	for j := row * c.dbinfo.Ne; j < (row+1) * c.dbinfo.Ne; j++ {
 		noised := ans.Get(j, 0) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
@@ -202,7 +201,7 @@ func (c *Client) RecoverMany(secret *Secret, ans *Answer) []uint64 {
 	for row := uint64(0); row < num_rows; row++ {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
-		for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
+		for j := row * c.dbinfo.Ne; j < (row+1) * c.dbinfo.Ne; j++ {
 			noised := ans.Get(j, 0) + offset
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
@@ -221,16 +220,6 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 		panic("Not yet supported")
 	}
 
-	mod := uint64(1 << c.dbinfo.Row_length)
-	if mod > c.params.P {
-		if mod % c.params.P != 0 {
-			panic("Not yet supported")
-		}
-		mod = c.params.P
-	} else if c.params.P % mod != 0 {
-		panic("Not yet supported")
-	}
-
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.params.M; j++ {
@@ -246,12 +235,13 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 	for _, elem := range secret.arr {
 		norm += elem
 	}
+	norm %= 2
 
 	out := make([]uint64, ans.Rows())
 	for row := uint64(0); row < ans.Rows(); row++ {
 		noised := ans.Get(row, 0) + offset
 		denoised := c.params.Round(noised)
-		out[row] = (denoised + ratio * norm) % mod
+		out[row] = (denoised + ratio * norm) % c.params.P
 	}
 	ans.Add(interm)
 
