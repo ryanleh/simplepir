@@ -10,6 +10,7 @@ import "io"
 import "math/big"
 import "bytes"
 import "reflect"
+import "encoding/gob"
 
 type Elem = C.Elem
 
@@ -330,28 +331,31 @@ func (m *Matrix) Equals(n *Matrix) bool {
 	return reflect.DeepEqual(m.data, n.data)
 }
 
-func (m Matrix) MarshalBinary() ([]byte, error) {
-	var b bytes.Buffer
-	fmt.Fprintf(&b, "%d %d ", m.rows, m.cols)
-	for _, v := range m.data {
-		fmt.Fprintf(&b, "%d ", v)
+func (m Matrix) GobEncode() ([]byte, error) {
+	buf := new(bytes.Buffer)
+	encoder := gob.NewEncoder(buf)
+	err1 := encoder.Encode(m.rows)
+	err2 := encoder.Encode(m.cols)
+	err3 := encoder.Encode(m.data)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		panic("Gob encoding error")
 	}
-	return b.Bytes(), nil
+
+	return buf.Bytes(), nil
 }
 
-func (m *Matrix) UnmarshalBinary(data []byte) error {
-	b := bytes.NewBuffer(data)
-	_, err := fmt.Fscanf(b, "%d %d ", &m.rows, &m.cols)
-	if err != nil {
-		return err
-	}
+func (m *Matrix) GobDecode(buf []byte) error {
+	b := bytes.NewBuffer(buf)
+	decoder := gob.NewDecoder(b)
+	err1 := decoder.Decode(&m.rows)
+	err2 := decoder.Decode(&m.cols)
 
 	m.data = make([]C.Elem, m.rows * m.cols)
-	for i := uint64(0); i < m.rows * m.cols; i++ {
-		_, err := fmt.Fscanf(b, "%d ", &m.data[i])
-		if err != nil {
-			return err
-		}
+	err3 := decoder.Decode(&m.data)
+
+	if err1 != nil || err2 != nil || err3 != nil {
+		panic("Gob decoding error")
 	}
 
 	return nil
