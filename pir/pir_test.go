@@ -1,16 +1,55 @@
 package pir
 
 import (
-	//"encoding/csv"
+	"encoding/gob"
 	"fmt"
-	//"math"
-	//"os"
-	//"strconv"
+	"bytes"
 	"testing"
 )
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
+
+func testServerEncode(t *testing.T, N, d uint64) {
+	prg := NewRandomBufPRG()
+	p := PickParams(N, d, SEC_PARAM, LOGQ)
+	db := NewDatabaseRandom(prg, N, d, p)
+	server := NewServer(p, db)
+
+	var b bytes.Buffer
+	enc := gob.NewEncoder(&b)
+	err := enc.Encode(server)
+	if err != nil {
+		panic("Encoding failed")
+	}
+
+	dec := gob.NewDecoder(&b)
+	var server2 Server
+	err = dec.Decode(&server2)
+	if err != nil {
+		panic("Decoding failed")
+	}
+
+	if *server2.params != *server.params {
+		panic("Parameter mismatch")
+	}
+	if !server2.matrixA.Equals(server.matrixA) {
+		panic("A matrix mismatch")
+	}
+	if !server2.hint.Equals(server.hint) {
+		panic("Hint mismatch")
+	}
+	if *server2.db.Info != *server.db.Info {
+		panic("DB info mismatch")
+	}
+	if !server2.db.Data.Equals(server.db.Data) {
+		panic("DB mismatch")
+	}
+}
+
+func TestServerEncode(t *testing.T) {
+	testServerEncode(t, uint64(1<<20), uint64(8))
+}
 
 // Run full PIR scheme (offline + online phases).
 func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {

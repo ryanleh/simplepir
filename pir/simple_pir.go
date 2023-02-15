@@ -1,5 +1,7 @@
 package pir
 
+import "bytes"
+import "encoding/gob"
 import "github.com/henrycg/simplepir/matrix"
 
 type Server struct {
@@ -77,6 +79,50 @@ func (s *Server) Params() *Params {
 
 func (s *Server) DBInfo() *DBInfo {
 	return s.db.Info
+}
+
+func (s *Server) GobEncode() ([]byte, error) {
+  buf := new(bytes.Buffer)
+  enc := gob.NewEncoder(buf)
+  err := enc.Encode(s.params)
+  if err != nil {
+    return buf.Bytes(), err
+  }
+
+  err = enc.Encode(s.matrixA) // TODO: Improve by storing just a see
+  if err != nil {
+    return buf.Bytes(), err
+  }
+
+  err = enc.Encode(s.db)
+  if err != nil {
+    return buf.Bytes(), err
+  }
+
+  err = enc.Encode(s.hint)
+  return buf.Bytes(), err
+}
+
+func (s *Server) GobDecode(buf []byte) error {
+  b := bytes.NewBuffer(buf)
+  dec := gob.NewDecoder(b)
+  err := dec.Decode(&s.params)
+  if err != nil {
+    return err
+  }
+  
+  err = dec.Decode(&s.matrixA)
+  if err != nil {
+    return err
+  }
+  
+  err = dec.Decode(&s.db)
+  if err != nil {
+    return err
+  }
+  
+  err = dec.Decode(&s.hint)
+  return err
 }
 
 func NewClient(params *Params, hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Client {
