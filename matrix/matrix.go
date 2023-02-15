@@ -129,6 +129,21 @@ func (a *Matrix) Add(b *Matrix) {
 	}
 }
 
+func (a *Matrix) AddWithMismatch(b *Matrix) {
+	if (a.cols != b.cols) {
+		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
+		panic("Dimension mismatch")
+	}
+
+	if (a.rows < b.rows) {
+		a.Concat(Zeros(b.rows - a.rows, a.cols))
+	}
+
+	for i := uint64(0); i < b.cols*b.rows; i++ {
+		a.data[i] += b.data[i]
+	}
+}
+
 func (a *Matrix) AddUint64(val uint64) {
 	v := C.Elem(val)
 	for i := uint64(0); i < a.cols*a.rows; i++ {
@@ -279,6 +294,16 @@ func (m *Matrix) Round(round_to uint64, mod uint64) {
 func (m *Matrix) DropLastrows(n uint64) {
 	m.rows -= n
 	m.data = m.data[:(m.rows * m.cols)]
+}
+
+func (m *Matrix) GetRow(offset, num_rows uint64) *Matrix {
+	if offset+num_rows > m.rows {
+		panic("Requesting too many rows")
+	}
+
+	m2 := New(num_rows, m.cols)
+	m2.data = m.data[(offset*m.cols):((offset+num_rows)*m.cols)]
+	return m2
 }
 
 func (m *Matrix) rowsDeepCopy(offset, num_rows uint64) *Matrix {
