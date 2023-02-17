@@ -2,7 +2,6 @@ package pir
 
 import "math"
 import "math/rand"
-import "fmt"
 
 // Returns the i-th elem in the representation of m in base p.
 func Base_p(p, m, i uint64) uint64 {
@@ -29,25 +28,6 @@ func Compute_num_entries_base_p(p, log_q uint64) uint64 {
 	return uint64(math.Ceil(float64(log_q) / log_p))
 }
 
-// Returns how many Z_p elements are needed to represent a database of N entries,
-// each consisting of row_length bits.
-func Num_DB_entries(N, row_length, p uint64) (uint64, uint64, uint64) {
-	if float64(row_length) <= math.Log2(float64(p)) {
-		// pack multiple DB entries into a single Z_p elem
-		logp := uint64(math.Log2(float64(p)))
-		entries_per_elem := logp / row_length
-		db_entries := uint64(math.Ceil(float64(N) / float64(entries_per_elem)))
-		if db_entries == 0 || db_entries > N {
-			fmt.Printf("Num entries is %d; N is %d\n", db_entries, N)
-			panic("Should not happen")
-		}
-		return db_entries, 1, entries_per_elem
-	}
-
-	// use multiple Z_p elems to represent a single DB entry
-	ne := Compute_num_entries_base_p(p, row_length)
-	return N * ne, ne, 0
-}
 
 func RandArray(length, mod uint64) []uint64 {
 	res := make([]uint64, length)

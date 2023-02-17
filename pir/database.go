@@ -3,11 +3,12 @@ package pir
 import "math"
 import "fmt"
 
+import "github.com/henrycg/simplepir/lwe"
 import "github.com/henrycg/simplepir/matrix"
 
 type DBInfo struct {
 	Num        uint64 // number of db entries.
-	Row_length uint64 // number of bits per db entry.
+	RowLength uint64 // number of bits per db entry.
 
 	Packing uint64 // number of db entries per Z_p elem, if log(p) > db entry size.
 	Ne      uint64 // number of Z_p elems per db entry, if db entry size > log(p).
@@ -15,13 +16,16 @@ type DBInfo struct {
 	X uint64 // tunable param that governs communication,
 	// must be in range [1, ne] and must be a divisor of ne;
 	// represents the number of times the scheme is repeated.
-	P    uint64 // plaintext modulus.
-	Logq uint64 // (logarithm of) ciphertext modulus.
+
+	L uint64 // database width
+	M uint64 // database height
 
 	// For in-memory db compression
 	Basis     uint64
 	Squishing uint64
 	Cols      uint64
+
+  Params *lwe.Params
 }
 
 type Database struct {
@@ -48,26 +52,26 @@ func (db *Database) Squish() {
 	//fmt.Printf("After squishing, with compression factor %d: ", db.Info.Squishing)
 	//db.Data.Dim()
 
-	// Check that params allow for this compression
-	if (db.Info.P > (1 << db.Info.Basis)) || (db.Info.Logq < db.Info.Basis*db.Info.Squishing) {
-		panic("Bad params")
+	// Check that Params allow for this compression
+	if (db.Info.P() > (1 << db.Info.Basis)) || (db.Info.Params.Logq < db.Info.Basis*db.Info.Squishing) {
+		panic("Bad Params")
 	}
 }
 
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
-func ReconstructElem(vals []uint64, index uint64, info *DBInfo) uint64 {
-	q := uint64(1 << info.Logq)
+func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
+	q := uint64(1 << Info.Params.Logq)
 
 	for i, _ := range vals {
-		vals[i] = (vals[i] + info.P/2) % q
-		vals[i] = vals[i] % info.P
+		vals[i] = (vals[i] + Info.P()/2) % q
+		vals[i] = vals[i] % Info.P()
 	}
 
-	val := Reconstruct_from_base_p(info.P, vals)
+	val := Reconstruct_from_base_p(Info.P(), vals)
 
-	if info.Packing > 0 {
-		val = Base_p((1 << info.Row_length), val, index%info.Packing)
+	if Info.Packing > 0 {
+		val = Base_p((1 << Info.RowLength), val, index%Info.Packing)
 	}
 
 	return val
@@ -93,76 +97,152 @@ func (db *Database) GetElem(i uint64) uint64 {
 		vals = append(vals, db.Data.Get(j, col))
 	}
 
-	return ReconstructElem(vals, i, db.Info)
+	return db.Info.ReconstructElem(vals, i)
 }
 
+// Returns how many Z_p elements are needed to represent a database of N entries,
+// each consisting of row_length bits.
+func numEntries(N, row_length, p uint64) (uint64, uint64, uint64) {
+	if float64(row_length) <= math.Log2(float64(p)) {
+		// pack multiple DB entries into a single Z_p elem
+		logp := uint64(math.Log2(float64(p)))
+		entries_per_elem := logp / row_length
+		db_entries := uint64(math.Ceil(float64(N) / float64(entries_per_elem)))
+		if db_entries == 0 || db_entries > N {
+			fmt.Printf("Num entries is %d; N is %d\n", db_entries, N)
+			panic("Should not happen")
+		}
+		return db_entries, 1, entries_per_elem
+	}
 
-func NewDBInfo(num, row_length uint64, p *Params) *DBInfo {
-	if (num == 0) || (row_length == 0) {
+	// use multiple Z_p elems to represent a single DB entry
+	ne := Compute_num_entries_base_p(p, row_length)
+	return N * ne, ne, 0
+}
+
+// Find smallest l, m such that l*m >= N*ne and ne divides l, where ne is
+// the number of Z_p elements per db entry determined by row_length and p.
+func approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, p uint64) (uint64, uint64) {
+	l := uint64(math.Floor(math.Sqrt(float64(dbElems))))
+
+	rem := l % elemsPerEntry
+	if rem != 0 {
+		l += elemsPerEntry - rem
+	}
+
+	m := uint64(math.Ceil(float64(dbElems) / float64(l)))
+
+	return l, m
+}
+
+func NewDBInfo(num, rowLength uint64) *DBInfo {
+	if (num == 0) || (rowLength == 0) {
 		panic("Empty database!")
 	}
+  // Make a guess at plaintext modulus and compute parameters
+  tempP := uint64(256)
+	dbElems, elemsPerEntry, _ := numEntries(num, rowLength, tempP)
+  _, m := approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, tempP)
 
-	info := new(DBInfo)
+  params := lwe.NewParams(m)
+  if params == nil {
+    panic("Could not find LWE Params")
+  }
 
-	info.Num = num
-	info.Row_length = row_length
-	info.P = p.P
-	info.Logq = p.Logq
+  return NewDBInfoFixedParams(num, rowLength, params, false)
+}
 
-	db_elems, elems_per_entry, entries_per_elem := Num_DB_entries(num, row_length, p.P)
-	info.Ne = elems_per_entry
-	info.X = info.Ne
-	info.Packing = entries_per_elem
+func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixed bool) *DBInfo {
+	Info := &DBInfo{
+    Num: num,
+    RowLength: rowLength,
+    Params: params,
+  }
 
-	for info.Ne%info.X != 0 {
-		info.X += 1
+  // Compute database Info based on real LWE parameters
+  var entriesPerElem uint64
+  dbElems, elemsPerEntry, entriesPerElem := numEntries(num, rowLength, Info.Params.P)
+  Info.L, Info.M = approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, Info.Params.P)
+
+	Info.Ne = elemsPerEntry
+	Info.X = Info.Ne
+	Info.Packing = entriesPerElem
+
+	for Info.Ne%Info.X != 0 {
+		Info.X += 1
 	}
-
-	info.Basis = 0
-	info.Squishing = 0
 
 	fmt.Printf("Total packed db size is ~%f MB\n",
-		float64(p.L*p.M)*math.Log2(float64(p.P))/(1024.0*1024.0*8.0))
+		float64(Info.L*Info.M)*math.Log2(float64(Info.P()))/(1024.0*1024.0*8.0))
 
-	if db_elems > p.L*p.M {
-		panic("Params and database size don't match")
+	if dbElems > Info.L*Info.M {
+		panic("lwe.Params and database size don't match")
 	}
 
-	if p.L%info.Ne != 0 {
+	if Info.L%Info.Ne != 0 {
 		panic("Number of db elems per entry must divide db height")
 	}
 
-	return info
+  if !fixed {
+    // Recompute params based on chosen M
+    Info.Params = lwe.NewParams(Info.M)
+  }
+
+  if Info.Params == nil {
+    panic("Could not find good LWE Params")
+  }
+
+
+	return Info
 }
 
-func NewDatabaseRandom(prg *BufPRGReader, Num, row_length uint64, p *Params) *Database {
-	db := new(Database)
-	db.Info = NewDBInfo(Num, row_length, p)
+// Number of Z_p elements to represent a DB record
+func (Info *DBInfo) RecordSize() uint64 {
+  return Info.Ne
+}
 
-	mod := p.P
-	if ((1 << row_length) < mod) && (db.Info.Packing == 1) {
-		mod = (1 << row_length)
+func (Info *DBInfo) P() uint64 {
+  return Info.Params.P
+}
+
+func NewDatabaseRandom(prg *BufPRGReader, num, rowLength uint64) *Database {
+  info := NewDBInfo(num, rowLength)
+  return NewDatabaseRandomFixedParams(prg, num, rowLength, info.Params)
+}
+
+func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database {
+	db := new(Database)
+	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
+
+	mod := db.Info.P()
+	if ((1 << rowLength) < mod) && (db.Info.Packing == 1) {
+		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand(prg, p.L, p.M, 0, mod)
+	db.Data = matrix.Rand(prg, db.Info.L, db.Info.M, 0, mod)
 
 	// clear overflow cols
-	row := p.L - 1
-	for i := Num; i < p.L * p.M; i++ {
-		col := i % p.M
+	row := db.Info.L - 1
+	for i := Num; i < db.Info.L * db.Info.M; i++ {
+		col := i % db.Info.M
 		db.Data.Set(0, row, col)
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubUint64(p.P / 2)
+	db.Data.SubUint64(db.Info.P() / 2)
 
 	return db
 }
 
-func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
+func NewDatabase(num, rowLength uint64, vals []uint64) *Database {
+  info := NewDBInfo(num, rowLength)
+	return NewDatabaseFixedParams(num, rowLength, vals, info.Params)
+}
+
+func NewDatabaseFixedParams(Num, rowLength uint64, vals []uint64, params *lwe.Params) *Database {
 	db := new(Database)
-	db.Info = NewDBInfo(Num, row_length, p)
-	db.Data = matrix.Zeros(p.L, p.M)
+	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
+	db.Data = matrix.Zeros(db.Info.L, db.Info.M)
 
 	if uint64(len(vals)) != Num {
 		panic("Bad input db")
@@ -175,9 +255,9 @@ func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
 		coeff := uint64(1)
 		for i, elem := range vals {
 			cur += (elem * coeff)
-			coeff *= (1 << row_length)
+			coeff *= (1 << rowLength)
 			if ((i+1)%int(db.Info.Packing) == 0) || (i == len(vals)-1) {
-				db.Data.Set(cur, at/p.M, at%p.M)
+				db.Data.Set(cur, at/db.Info.M, at%db.Info.M)
 				at += 1
 				cur = 0
 				coeff = 1
@@ -187,13 +267,13 @@ func NewDatabase(Num, row_length uint64, p *Params, vals []uint64) *Database {
 		// Use multiple Z_p elems to represent each db elem
 		for i, elem := range vals {
 			for j := uint64(0); j < db.Info.Ne; j++ {
-				db.Data.Set(Base_p(db.Info.P, elem, j), (uint64(i)/p.M)*db.Info.Ne+j, uint64(i)%p.M)
+				db.Data.Set(Base_p(db.Info.P(), elem, j), (uint64(i)/db.Info.M)*db.Info.Ne+j, uint64(i)%db.Info.M)
 			}
 		}
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubUint64(p.P / 2)
+	db.Data.SubUint64(db.Info.P() / 2)
 
 	return db
 }

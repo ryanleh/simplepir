@@ -5,16 +5,18 @@ import (
 	"fmt"
 	"bytes"
 	"testing"
+
+  "github.com/henrycg/simplepir/lwe"
 )
+
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
 
 func testServerEncode(t *testing.T, N, d uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabaseRandom(prg, N, d, p)
-	server := NewServer(p, db)
+	db := NewDatabaseRandom(prg, N, d)
+	server := NewServer(db)
 
 	var b bytes.Buffer
 	enc := gob.NewEncoder(&b)
@@ -39,7 +41,11 @@ func testServerEncode(t *testing.T, N, d uint64) {
 	if !server2.hint.Equals(server.hint) {
 		panic("Hint mismatch")
 	}
-	if *server2.db.Info != *server.db.Info {
+
+	if server2.db.Info.Num != server.db.Info.Num {
+		panic("DB info mismatch")
+	}
+	if server2.db.Info.Params.N != server.db.Info.Params.N {
 		panic("DB info mismatch")
 	}
 	if !server2.db.Data.Equals(server.db.Data) {
@@ -52,7 +58,7 @@ func TestServerEncode(t *testing.T) {
 }
 
 // Run full PIR scheme (offline + online phases).
-func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {
+func runPIR(client *Client, server *Server, db *Database, i uint64) {
 	secret, query := client.Query(i)
 	answer := server.Answer(query)
 
@@ -65,15 +71,15 @@ func runPIR(client *Client, server *Server, db *Database, p *Params, i uint64) {
 	}
 }
 
-func runPIRmany(client *Client, server *Server, db *Database, p *Params, i uint64) {
+func runPIRmany(client *Client, server *Server, db *Database, i uint64) {
 	secret, query := client.Query(i)
 	answer := server.Answer(query)
 
 	vals := client.RecoverMany(secret, answer)
 
-	col_index := i % p.M
+	col_index := i % db.Info.M
 	for row := uint64(0); row < uint64(len(vals)); row++ {
-		index := row * p.M + col_index
+		index := row * db.Info.M + col_index
 		if db.GetElem(index) != vals[row] {
 			fmt.Printf("Querying index %d: Got %d instead of %d\n",
 				   index, vals[row], db.GetElem(index))
@@ -82,14 +88,14 @@ func runPIRmany(client *Client, server *Server, db *Database, p *Params, i uint6
 	}
 }
 
-func runLHE(client *Client, server *Server, db *Database, p *Params, arr []uint64) {
+func runLHE(client *Client, server *Server, db *Database, arr []uint64) {
 	secret, query := client.QueryLHE(arr)
 	answer := server.Answer(query)
 
 	vals := client.RecoverManyLHE(secret, answer)
 
 	at := uint64(0)
-	mod := p.P
+	mod := db.Info.P()
 	for i := 0; i < len(vals); i++ {
 		should_be := uint64(0)
 		for j := uint64(0); (j < uint64(len(arr))) && (at < db.Info.Num); j++ {
@@ -107,8 +113,7 @@ func runLHE(client *Client, server *Server, db *Database, p *Params, arr []uint6
 }
 
 func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabase(N, d, p, vals)
+	db := NewDatabase(N, d, vals)
 
 	for i := uint64(0); i < N; i++ {
 		if db.GetElem(i) != (i + 1) {
@@ -151,75 +156,69 @@ func TestDBLargeEntries(t *testing.T) {
 
 func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabaseRandom(prg, N, d, p)
+	db := NewDatabaseRandom(prg, N, d)
 
-	server := NewServer(p, db)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServer(db)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	runPIR(client, server, db, p, index)
+	runPIR(client, server, db, index)
 }
 
 func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabaseRandom(prg, N, d, p)
+	db := NewDatabaseRandom(prg, N, d)
 
-	server := NewServer(p, db)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServer(db)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	runPIRmany(client, server, db, p, index)
+	runPIRmany(client, server, db, index)
 }
 
 func testLHE(t *testing.T, N uint64, d uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	p.P = PrevPowerOfTwo(p.P)
-	db := NewDatabaseRandom(prg, N, d, p)
+  params := lwe.NewParamsFixedP(N, 1024)
+	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
-	server := NewServer(p, db)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServer(db)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	arr := RandArray(p.M, p.P)
-	runLHE(client, server, db, p, arr)
+	arr := RandArray(db.Info.M, db.Info.P())
+	runLHE(client, server, db, arr)
 }
 
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabaseRandom(prg, N, d, p)
+	db := NewDatabaseRandom(prg, N, d)
 
 	seed := RandomPRGKey()
-	server := NewServerSeed(p, db, seed)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServerSeed(db, seed)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	runPIR(client, server, db, p, index)
+	runPIR(client, server, db, index)
 }
 
 func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	db := NewDatabaseRandom(prg, N, d, p)
+	db := NewDatabaseRandom(prg, N, d)
 
 	seed := RandomPRGKey()
-	server := NewServerSeed(p, db, seed)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServerSeed(db, seed)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	runPIRmany(client, server, db, p, index)
+	runPIRmany(client, server, db, index)
 }
 
 func testLHECompressed(t *testing.T, N uint64, d uint64) {
 	prg := NewRandomBufPRG()
-	p := PickParams(N, d, SEC_PARAM, LOGQ)
-	p.P = PrevPowerOfTwo(p.P)
-	db := NewDatabaseRandom(prg, N, d, p)
+  params := lwe.NewParamsFixedP(N, 1024)
+	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
 	seed := RandomPRGKey()
-	server := NewServerSeed(p, db, seed)
-	client := NewClient(p, server.Hint(), server.MatrixA(), db.Info)
+	server := NewServerSeed(db, seed)
+	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
-	arr := RandArray(p.M, p.P)
-	runLHE(client, server, db, p, arr)
+	arr := RandArray(db.Info.M, db.Info.P())
+	runLHE(client, server, db, arr)
 }
 
 // Test SimplePIR correctness on DB with short entries.
