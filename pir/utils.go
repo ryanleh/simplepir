@@ -28,10 +28,9 @@ func Compute_num_entries_base_p(p, log_q uint64) uint64 {
 	return uint64(math.Ceil(float64(log_q) / log_p))
 }
 
-
 func RandArray(length, mod uint64) []uint64 {
 	res := make([]uint64, length)
-	
+
 	for i := 0; i < len(res); i++ {
 		res[i] = rand.Uint64() % mod
 	}
@@ -49,6 +48,5 @@ func PrevPowerOfTwo(v uint64) uint64 {
 		digits += 1
 	}
 
-	return uint64(1 << (digits-1))
+	return uint64(1 << (digits - 1))
 }
-

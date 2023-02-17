@@ -16,4 +16,3 @@ func printRate(info *DBInfo, elapsed time.Duration, batch_sz int) float64 {
 	fmt.Printf("\tRate: %f MB/s\n", rate)
 	return rate
 }
-

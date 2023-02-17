@@ -1,14 +1,13 @@
 package pir
 
 import (
+	"bytes"
 	"encoding/gob"
 	"fmt"
-	"bytes"
 	"testing"
 
-  "github.com/henrycg/simplepir/lwe"
+	"github.com/henrycg/simplepir/lwe"
 )
-
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
@@ -79,10 +78,10 @@ func runPIRmany(client *Client, server *Server, db *Database, i uint64) {
 
 	col_index := i % db.Info.M
 	for row := uint64(0); row < uint64(len(vals)); row++ {
-		index := row * db.Info.M + col_index
+		index := row*db.Info.M + col_index
 		if db.GetElem(index) != vals[row] {
 			fmt.Printf("Querying index %d: Got %d instead of %d\n",
-				   index, vals[row], db.GetElem(index))
+				index, vals[row], db.GetElem(index))
 			panic("Reconstruct failed!")
 		}
 	}
@@ -106,7 +105,7 @@ func runLHE(client *Client, server *Server, db *Database, arr []uint64) {
 
 		if should_be != vals[i] {
 			fmt.Printf("Row %d: Got %d instead of %d (mod %d)\n",
-				    i, vals[i], should_be, mod)
+				i, vals[i], should_be, mod)
 			panic("Reconstruct failed!")
 		}
 	}
@@ -176,7 +175,7 @@ func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
 
 func testLHE(t *testing.T, N uint64, d uint64) {
 	prg := NewRandomBufPRG()
-  params := lwe.NewParamsFixedP(N, 1024)
+	params := lwe.NewParamsFixedP(N, 1024)
 	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
 	server := NewServer(db)
@@ -210,7 +209,7 @@ func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64)
 
 func testLHECompressed(t *testing.T, N uint64, d uint64) {
 	prg := NewRandomBufPRG()
-  params := lwe.NewParamsFixedP(N, 1024)
+	params := lwe.NewParamsFixedP(N, 1024)
 	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
 	seed := RandomPRGKey()

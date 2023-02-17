@@ -1,7 +1,7 @@
 package matrix
 
 import (
-  mrand "math/rand"
+	mrand "math/rand"
 )
 
 var cdf_table = [...]float64{
@@ -44,7 +44,7 @@ func GaussSample(src mrand.Source) int64 {
 		}
 	}
 
-  if math_src.Uint64()%2 == 0 {
+	if math_src.Uint64()%2 == 0 {
 		x = -x
 	}
 

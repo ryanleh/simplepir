@@ -13,30 +13,30 @@ const lweErrorStdDev64 = float64(81920.0)
 
 /* Maps #samples ==> plaintext modulus */
 var plaintextModulus32 = map[uint64]uint64{
-  1<<13: 991,
-  1<<14: 833,
-  1<<15: 701,
-  1<<16: 589,
-  1<<17: 495,
-  1<<18: 416,
-  1<<19: 350,
-  1<<20: 294,
-  1<<21: 247,
+	1 << 13: 991,
+	1 << 14: 833,
+	1 << 15: 701,
+	1 << 16: 589,
+	1 << 17: 495,
+	1 << 18: 416,
+	1 << 19: 350,
+	1 << 20: 294,
+	1 << 21: 247,
 }
 
 /* Maps #samples ==> plaintext modulus */
-var plaintextModulus64= map[uint64]uint64{
-  1<<13: 574457,
-  1<<14: 483058,
-  1<<15: 406202,
-  1<<16: 341574,
-  1<<17: 287228,
-  1<<18: 241529,
-  1<<19: 203101,
-  1<<20: 170787,
-  1<<21: 143614,
-  1<<22: 120764,
-  1<<23: 101550,
+var plaintextModulus64 = map[uint64]uint64{
+	1 << 13: 574457,
+	1 << 14: 483058,
+	1 << 15: 406202,
+	1 << 16: 341574,
+	1 << 17: 287228,
+	1 << 18: 241529,
+	1 << 19: 203101,
+	1 << 20: 170787,
+	1 << 21: 143614,
+	1 << 22: 120764,
+	1 << 23: 101550,
 }
 
 type Params struct {
@@ -64,49 +64,48 @@ func (p *Params) PrintParams() {
 }
 
 // Output LWE parameters for Regev encryption where
-// each ciphertext can support up to 'nSamples' 
-// homomorphic additions. 
+// each ciphertext can support up to 'nSamples'
+// homomorphic additions.
 func NewParams(logq uint64, nSamples uint64) *Params {
-  max := uint64(math.MaxUint64)
-  m := max
-  pmod := uint64(0)
+	max := uint64(math.MaxUint64)
+	m := max
+	pmod := uint64(0)
 
-  options := plaintextModulus32 
-  if logq == 64 {
-    options = plaintextModulus64
-  }
-  for mNew,pNew := range options {
-    if mNew < m && nSamples < mNew {
-      m = mNew
-      pmod = pNew
-    }
-  }
+	options := plaintextModulus32
+	if logq == 64 {
+		options = plaintextModulus64
+	}
+	for mNew, pNew := range options {
+		if mNew < m && nSamples < mNew {
+			m = mNew
+			pmod = pNew
+		}
+	}
 
-  // No good parameters found
-  if m == max {
-    return nil
-  }
+	// No good parameters found
+	if m == max {
+		return nil
+	}
 
-  return NewParamsFixedP(logq, m, pmod)
+	return NewParamsFixedP(logq, m, pmod)
 }
 
 func NewParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
-  p := &Params{
-    Logq: logq,
-    M: nSamples,
-    P: pMod,
-  }
+	p := &Params{
+		Logq: logq,
+		M:    nSamples,
+		P:    pMod,
+	}
 
-  if logq == 32 {
-    p.N = secretDimension32
-    p.Sigma = lweErrorStdDev32
-  } else if logq == 64 {
-    p.N = secretDimension64
-    p.Sigma = lweErrorStdDev64
-  } else {
-    panic("Not yet implemented")
-  }
+	if logq == 32 {
+		p.N = secretDimension32
+		p.Sigma = lweErrorStdDev32
+	} else if logq == 64 {
+		p.N = secretDimension64
+		p.Sigma = lweErrorStdDev64
+	} else {
+		panic("Not yet implemented")
+	}
 
-  return p
+	return p
 }
-

@@ -2,8 +2,8 @@ package pir
 
 import (
 	//"log"
-	"testing"
 	"github.com/henrycg/simplepir/matrix"
+	"testing"
 )
 
 func TestGauss(t *testing.T) {

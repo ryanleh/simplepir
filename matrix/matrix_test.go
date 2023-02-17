@@ -1,9 +1,9 @@
 package matrix
 
 import (
-	"fmt"
-	"encoding/gob"
 	"bytes"
+	"encoding/gob"
+	"fmt"
 	"testing"
 )
 
@@ -29,7 +29,7 @@ func TestGob(t *testing.T) {
 		panic("Decoding failed")
 	}
 
-	if ! m.Equals(&n) {
+	if !m.Equals(&n) {
 		m.Print()
 		n.Print()
 		panic("Objects are not equal")

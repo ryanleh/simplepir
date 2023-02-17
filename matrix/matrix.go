@@ -3,20 +3,23 @@ package matrix
 // #cgo CFLAGS: -O3 -march=native
 // #include "matrix.h"
 import "C"
-import "crypto/rand"
-import mrand "math/rand"
-import "fmt"
-import "io"
-import "math/big"
-import "bytes"
-import "reflect"
-import "encoding/gob"
+
+import (
+	"bytes"
+	"crypto/rand"
+	"encoding/gob"
+	"fmt"
+	"io"
+	"math/big"
+	mrand "math/rand"
+	"reflect"
+)
 
 type Elem = C.Elem
 
 type IoRandSource interface {
-    io.Reader
-    mrand.Source64
+	io.Reader
+	mrand.Source64
 }
 
 type Matrix struct {
@@ -67,10 +70,10 @@ func Rand(src IoRandSource, rows uint64, cols uint64, logmod uint64, mod uint64)
 		m = big.NewInt(1 << logmod)
 	}
 	for i := 0; i < len(out.data); i++ {
-    v,err := rand.Int(src, m)
-    if err != nil {
-      panic("Randomness error")
-    }
+		v, err := rand.Int(src, m)
+		if err != nil {
+			panic("Randomness error")
+		}
 		out.data[i] = C.Elem(v.Uint64())
 	}
 	return out
@@ -130,13 +133,13 @@ func (a *Matrix) Add(b *Matrix) {
 }
 
 func (a *Matrix) AddWithMismatch(b *Matrix) {
-	if (a.cols != b.cols) {
+	if a.cols != b.cols {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
 		panic("Dimension mismatch")
 	}
 
-	if (a.rows < b.rows) {
-		a.Concat(Zeros(b.rows - a.rows, a.cols))
+	if a.rows < b.rows {
+		a.Concat(Zeros(b.rows-a.rows, a.cols))
 	}
 
 	for i := uint64(0); i < b.cols*b.rows; i++ {
@@ -286,7 +289,7 @@ func (m *Matrix) Squish(basis, delta uint64) {
 
 func (m *Matrix) Round(round_to uint64, mod uint64) {
 	for i := uint64(0); i < m.rows*m.cols; i++ {
-    v := (uint64(m.data[i]) + round_to/2) / round_to
+		v := (uint64(m.data[i]) + round_to/2) / round_to
 		m.data[i] = C.Elem(v % mod)
 	}
 }
@@ -302,7 +305,7 @@ func (m *Matrix) GetRow(offset, num_rows uint64) *Matrix {
 	}
 
 	m2 := New(num_rows, m.cols)
-	m2.data = m.data[(offset*m.cols):((offset+num_rows)*m.cols)]
+	m2.data = m.data[(offset * m.cols):((offset + num_rows) * m.cols)]
 	return m2
 }
 
@@ -376,7 +379,7 @@ func (m *Matrix) GobDecode(buf []byte) error {
 	err1 := decoder.Decode(&m.rows)
 	err2 := decoder.Decode(&m.cols)
 
-	m.data = make([]C.Elem, m.rows * m.cols)
+	m.data = make([]C.Elem, m.rows*m.cols)
 	err3 := decoder.Decode(&m.data)
 
 	if err1 != nil || err2 != nil || err3 != nil {

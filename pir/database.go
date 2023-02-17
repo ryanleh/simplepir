@@ -7,7 +7,7 @@ import "github.com/henrycg/simplepir/lwe"
 import "github.com/henrycg/simplepir/matrix"
 
 type DBInfo struct {
-	Num        uint64 // number of db entries.
+	Num       uint64 // number of db entries.
 	RowLength uint64 // number of bits per db entry.
 
 	Packing uint64 // number of db entries per Z_p elem, if log(p) > db entry size.
@@ -25,7 +25,7 @@ type DBInfo struct {
 	Squishing uint64
 	Cols      uint64
 
-  Params *lwe.Params
+	Params *lwe.Params
 }
 
 type Database struct {
@@ -139,30 +139,30 @@ func NewDBInfo(num, rowLength uint64) *DBInfo {
 	if (num == 0) || (rowLength == 0) {
 		panic("Empty database!")
 	}
-  // Make a guess at plaintext modulus and compute parameters
-  tempP := uint64(256)
+	// Make a guess at plaintext modulus and compute parameters
+	tempP := uint64(256)
 	dbElems, elemsPerEntry, _ := numEntries(num, rowLength, tempP)
-  _, m := approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, tempP)
+	_, m := approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, tempP)
 
-  params := lwe.NewParams(m)
-  if params == nil {
-    panic("Could not find LWE Params")
-  }
+	params := lwe.NewParams(m)
+	if params == nil {
+		panic("Could not find LWE Params")
+	}
 
-  return NewDBInfoFixedParams(num, rowLength, params, false)
+	return NewDBInfoFixedParams(num, rowLength, params, false)
 }
 
 func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixed bool) *DBInfo {
 	Info := &DBInfo{
-    Num: num,
-    RowLength: rowLength,
-    Params: params,
-  }
+		Num:       num,
+		RowLength: rowLength,
+		Params:    params,
+	}
 
-  // Compute database Info based on real LWE parameters
-  var entriesPerElem uint64
-  dbElems, elemsPerEntry, entriesPerElem := numEntries(num, rowLength, Info.Params.P)
-  Info.L, Info.M = approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, Info.Params.P)
+	// Compute database Info based on real LWE parameters
+	var entriesPerElem uint64
+	dbElems, elemsPerEntry, entriesPerElem := numEntries(num, rowLength, Info.Params.P)
+	Info.L, Info.M = approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, Info.Params.P)
 
 	Info.Ne = elemsPerEntry
 	Info.X = Info.Ne
@@ -183,31 +183,30 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 		panic("Number of db elems per entry must divide db height")
 	}
 
-  if !fixed {
-    // Recompute params based on chosen M
-    Info.Params = lwe.NewParams(Info.M)
-  }
+	if !fixed {
+		// Recompute params based on chosen M
+		Info.Params = lwe.NewParams(Info.M)
+	}
 
-  if Info.Params == nil {
-    panic("Could not find good LWE Params")
-  }
-
+	if Info.Params == nil {
+		panic("Could not find good LWE Params")
+	}
 
 	return Info
 }
 
 // Number of Z_p elements to represent a DB record
 func (Info *DBInfo) RecordSize() uint64 {
-  return Info.Ne
+	return Info.Ne
 }
 
 func (Info *DBInfo) P() uint64 {
-  return Info.Params.P
+	return Info.Params.P
 }
 
 func NewDatabaseRandom(prg *BufPRGReader, num, rowLength uint64) *Database {
-  info := NewDBInfo(num, rowLength)
-  return NewDatabaseRandomFixedParams(prg, num, rowLength, info.Params)
+	info := NewDBInfo(num, rowLength)
+	return NewDatabaseRandomFixedParams(prg, num, rowLength, info.Params)
 }
 
 func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database {
@@ -223,7 +222,7 @@ func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, para
 
 	// clear overflow cols
 	row := db.Info.L - 1
-	for i := Num; i < db.Info.L * db.Info.M; i++ {
+	for i := Num; i < db.Info.L*db.Info.M; i++ {
 		col := i % db.Info.M
 		db.Data.Set(0, row, col)
 	}
@@ -235,7 +234,7 @@ func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, para
 }
 
 func NewDatabase(num, rowLength uint64, vals []uint64) *Database {
-  info := NewDBInfo(num, rowLength)
+	info := NewDBInfo(num, rowLength)
 	return NewDatabaseFixedParams(num, rowLength, vals, info.Params)
 }
 

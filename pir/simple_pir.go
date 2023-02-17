@@ -39,14 +39,14 @@ type Answer = matrix.Matrix
 
 func NewServer(db *Database) *Server {
 	prg := NewRandomBufPRG()
-  params := db.Info.Params
+	params := db.Info.Params
 	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
 }
 
 func NewServerSeed(db *Database, seed *PRGKey) *Server {
 	prg := NewBufPRG(NewPRG(seed))
-  params := db.Info.Params
+	params := db.Info.Params
 	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
 }
@@ -85,47 +85,47 @@ func (s *Server) Get(i uint64) uint64 {
 }
 
 func (s *Server) GobEncode() ([]byte, error) {
-  buf := new(bytes.Buffer)
-  enc := gob.NewEncoder(buf)
-  err := enc.Encode(s.params)
-  if err != nil {
-    return buf.Bytes(), err
-  }
+	buf := new(bytes.Buffer)
+	enc := gob.NewEncoder(buf)
+	err := enc.Encode(s.params)
+	if err != nil {
+		return buf.Bytes(), err
+	}
 
-  err = enc.Encode(s.matrixA) // TODO: Improve by storing just a see
-  if err != nil {
-    return buf.Bytes(), err
-  }
+	err = enc.Encode(s.matrixA) // TODO: Improve by storing just a see
+	if err != nil {
+		return buf.Bytes(), err
+	}
 
-  err = enc.Encode(s.db)
-  if err != nil {
-    return buf.Bytes(), err
-  }
+	err = enc.Encode(s.db)
+	if err != nil {
+		return buf.Bytes(), err
+	}
 
-  err = enc.Encode(s.hint)
-  return buf.Bytes(), err
+	err = enc.Encode(s.hint)
+	return buf.Bytes(), err
 }
 
 func (s *Server) GobDecode(buf []byte) error {
-  b := bytes.NewBuffer(buf)
-  dec := gob.NewDecoder(b)
-  err := dec.Decode(&s.params)
-  if err != nil {
-    return err
-  }
-  
-  err = dec.Decode(&s.matrixA)
-  if err != nil {
-    return err
-  }
-  
-  err = dec.Decode(&s.db)
-  if err != nil {
-    return err
-  }
-  
-  err = dec.Decode(&s.hint)
-  return err
+	b := bytes.NewBuffer(buf)
+	dec := gob.NewDecoder(b)
+	err := dec.Decode(&s.params)
+	if err != nil {
+		return err
+	}
+
+	err = dec.Decode(&s.matrixA)
+	if err != nil {
+		return err
+	}
+
+	err = dec.Decode(&s.db)
+	if err != nil {
+		return err
+	}
+
+	err = dec.Decode(&s.hint)
+	return err
 }
 
 func NewClient(hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Client {
@@ -172,21 +172,21 @@ func (c *Client) QueryLHE(arr []uint64) (*SecretLHE, *Query) {
 	}
 
 	// checks that p is a power of 2 (since q must be)
-	if (c.params.P & (c.params.P-1)) != 0 {
+	if (c.params.P & (c.params.P - 1)) != 0 {
 		panic("LHE requires p | q.")
 	}
 
 	s := &SecretLHE{
 		secret: matrix.Rand(c.prg, c.params.N, 1, c.params.Logq, 0),
-		arr:  arr,
+		arr:    arr,
 	}
 
 	err := matrix.Gaussian(c.prg, c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
-	for j:=uint64(0); j<c.dbinfo.M; j++ {
-		query.AddAt(c.params.Delta() * arr[j], j, 0)
+	for j := uint64(0); j < c.dbinfo.M; j++ {
+		query.AddAt(c.params.Delta()*arr[j], j, 0)
 	}
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -221,7 +221,7 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
-	for j := row * c.dbinfo.Ne; j < (row+1) * c.dbinfo.Ne; j++ {
+	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
 		noised := ans.Get(j, 0) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
@@ -250,7 +250,7 @@ func (c *Client) RecoverMany(secret *Secret, ans *Answer) []uint64 {
 	for row := uint64(0); row < num_rows; row++ {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
-		for j := row * c.dbinfo.Ne; j < (row+1) * c.dbinfo.Ne; j++ {
+		for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
 			noised := ans.Get(j, 0) + offset
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
@@ -290,7 +290,7 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 	for row := uint64(0); row < ans.Rows(); row++ {
 		noised := ans.Get(row, 0) + offset
 		denoised := c.params.Round(noised)
-		out[row] = (denoised + ratio * norm) % c.params.P
+		out[row] = (denoised + ratio*norm) % c.params.P
 	}
 	ans.Add(interm)
 
