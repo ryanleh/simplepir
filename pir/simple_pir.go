@@ -81,8 +81,8 @@ func (s *Server) DBInfo() *DBInfo {
 	return s.db.Info
 }
 
-func (s *Server) Get(i, j uint64) uint64 {
-	return s.db.Data.Get(i, j)
+func (s *Server) Get(i uint64) uint64 {
+	return s.db.GetElem(i)
 }
 
 func (s *Server) GobEncode() ([]byte, error) {
