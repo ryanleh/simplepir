@@ -3,12 +3,16 @@ package lwe
 import "math"
 import "fmt"
 
-var secretDimension = uint64(1024)
-var lweErrorStdDev = float64(6.4)
-var logCiphertextModulus = uint64(32)
+// For 32-bit ciphertext modulus
+const secretDimension32 = uint64(1024)
+const lweErrorStdDev32 = float64(6.4)
+
+// For 64-bit ciphertext modulus
+const secretDimension64 = uint64(1408)
+const lweErrorStdDev64 = float64(81920.0)
 
 /* Maps #samples ==> plaintext modulus */
-var plaintextModulus = map[uint64]uint64{
+var plaintextModulus32 = map[uint64]uint64{
   1<<13: 991,
   1<<14: 833,
   1<<15: 701,
@@ -20,6 +24,20 @@ var plaintextModulus = map[uint64]uint64{
   1<<21: 247,
 }
 
+/* Maps #samples ==> plaintext modulus */
+var plaintextModulus64= map[uint64]uint64{
+  1<<13: 574457,
+  1<<14: 483058,
+  1<<15: 406202,
+  1<<16: 341574,
+  1<<17: 287228,
+  1<<18: 241529,
+  1<<19: 203101,
+  1<<20: 170787,
+  1<<21: 143614,
+  1<<22: 120764,
+  1<<23: 101550,
+}
 
 type Params struct {
 	N     uint64  // LWE secret dimension
@@ -48,11 +66,16 @@ func (p *Params) PrintParams() {
 // Output LWE parameters for Regev encryption where
 // each ciphertext can support up to 'nSamples' 
 // homomorphic additions. 
-func NewParams(nSamples uint64) *Params {
+func NewParams(logq uint64, nSamples uint64) *Params {
   max := uint64(math.MaxUint64)
   m := max
   pmod := uint64(0)
-  for mNew,pNew := range plaintextModulus {
+
+  options := plaintextModulus32 
+  if logq == 64 {
+    options = plaintextModulus64
+  }
+  for mNew,pNew := range options {
     if mNew < m && nSamples < mNew {
       m = mNew
       pmod = pNew
@@ -64,22 +87,26 @@ func NewParams(nSamples uint64) *Params {
     return nil
   }
 
-  return &Params{
-    N: secretDimension, 
-    Sigma: lweErrorStdDev,
-    Logq: 32,
-    M: m,
-    P: pmod,
-  }
+  return NewParamsFixedP(logq, m, pmod)
 }
 
-func NewParamsFixedP(nSamples uint64, pMod uint64) *Params {
-  return &Params{
-    N: secretDimension, 
-    Sigma: lweErrorStdDev,
-    Logq: 32,
+func NewParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
+  p := &Params{
+    Logq: logq,
     M: nSamples,
     P: pMod,
   }
+
+  if logq == 32 {
+    p.N = secretDimension32
+    p.Sigma = lweErrorStdDev32
+  } else if logq == 64 {
+    p.N = secretDimension64
+    p.Sigma = lweErrorStdDev64
+  } else {
+    panic("Not yet implemented")
+  }
+
+  return p
 }
 
