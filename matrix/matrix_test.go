@@ -35,3 +35,7 @@ func TestGob(t *testing.T) {
 		panic("Objects are not equal")
 	}
 }
+
+func testAdd(t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
+
+}

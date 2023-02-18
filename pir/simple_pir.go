@@ -3,6 +3,7 @@ package pir
 import "bytes"
 import "encoding/gob"
 import "github.com/henrycg/simplepir/lwe"
+import "github.com/henrycg/simplepir/rand"
 import "github.com/henrycg/simplepir/matrix"
 
 type Server struct {
@@ -14,7 +15,7 @@ type Server struct {
 }
 
 type Client struct {
-	prg *BufPRGReader
+	prg *rand.BufPRGReader
 
 	params *lwe.Params
 	hint   *matrix.Matrix
@@ -38,14 +39,14 @@ type SecretLHE struct {
 type Answer = matrix.Matrix
 
 func NewServer(db *Database) *Server {
-	prg := NewRandomBufPRG()
+	prg := rand.NewRandomBufPRG()
 	params := db.Info.Params
 	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
 }
 
-func NewServerSeed(db *Database, seed *PRGKey) *Server {
-	prg := NewBufPRG(NewPRG(seed))
+func NewServerSeed(db *Database, seed *rand.PRGKey) *Server {
+	prg := rand.NewBufPRG(rand.NewPRG(seed))
 	params := db.Info.Params
 	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
@@ -130,7 +131,7 @@ func (s *Server) GobDecode(buf []byte) error {
 
 func NewClient(hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Client {
 	return &Client{
-		prg: NewRandomBufPRG(),
+		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
 		hint:   hint.Copy(),

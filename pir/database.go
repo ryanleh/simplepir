@@ -4,6 +4,7 @@ import "math"
 import "fmt"
 
 import "github.com/henrycg/simplepir/lwe"
+import "github.com/henrycg/simplepir/rand"
 import "github.com/henrycg/simplepir/matrix"
 
 type DBInfo struct {
@@ -135,7 +136,7 @@ func approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, p uint64) (uint
 	return l, m
 }
 
-func NewDBInfo(num, rowLength uint64) *DBInfo {
+func NewDBInfo(logq uint64, num uint64, rowLength uint64) *DBInfo {
 	if (num == 0) || (rowLength == 0) {
 		panic("Empty database!")
 	}
@@ -144,7 +145,7 @@ func NewDBInfo(num, rowLength uint64) *DBInfo {
 	dbElems, elemsPerEntry, _ := numEntries(num, rowLength, tempP)
 	_, m := approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, tempP)
 
-	params := lwe.NewParams(m)
+	params := lwe.NewParams(logq, m)
 	if params == nil {
 		panic("Could not find LWE Params")
 	}
@@ -185,7 +186,7 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 
 	if !fixed {
 		// Recompute params based on chosen M
-		Info.Params = lwe.NewParams(Info.M)
+		Info.Params = lwe.NewParams(params.Logq, Info.M)
 	}
 
 	if Info.Params == nil {
@@ -204,12 +205,12 @@ func (Info *DBInfo) P() uint64 {
 	return Info.Params.P
 }
 
-func NewDatabaseRandom(prg *BufPRGReader, num, rowLength uint64) *Database {
-	info := NewDBInfo(num, rowLength)
+func NewDatabaseRandom(prg *rand.BufPRGReader, logq, num, rowLength uint64) *Database {
+	info := NewDBInfo(logq, num, rowLength)
 	return NewDatabaseRandomFixedParams(prg, num, rowLength, info.Params)
 }
 
-func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database {
+func NewDatabaseRandomFixedParams(prg *rand.BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database {
 	db := new(Database)
 	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
 
@@ -233,8 +234,8 @@ func NewDatabaseRandomFixedParams(prg *BufPRGReader, Num, rowLength uint64, para
 	return db
 }
 
-func NewDatabase(num, rowLength uint64, vals []uint64) *Database {
-	info := NewDBInfo(num, rowLength)
+func NewDatabase(logq, num, rowLength uint64, vals []uint64) *Database {
+	info := NewDBInfo(logq, num, rowLength)
 	return NewDatabaseFixedParams(num, rowLength, vals, info.Params)
 }
 

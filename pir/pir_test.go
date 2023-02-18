@@ -7,14 +7,15 @@ import (
 	"testing"
 
 	"github.com/henrycg/simplepir/lwe"
+	"github.com/henrycg/simplepir/rand"
 )
 
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
 
 func testServerEncode(t *testing.T, N, d uint64) {
-	prg := NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, N, d)
+	prg := rand.NewRandomBufPRG()
+	db := NewDatabaseRandom(prg, LOGQ, N, d)
 	server := NewServer(db)
 
 	var b bytes.Buffer
@@ -112,7 +113,7 @@ func runLHE(client *Client, server *Server, db *Database, arr []uint64) {
 }
 
 func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
-	db := NewDatabase(N, d, vals)
+	db := NewDatabase(LOGQ, N, d, vals)
 
 	for i := uint64(0); i < N; i++ {
 		if db.GetElem(i) != (i + 1) {
@@ -154,8 +155,8 @@ func TestDBLargeEntries(t *testing.T) {
 }
 
 func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
-	prg := NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, N, d)
+	prg := rand.NewRandomBufPRG()
+	db := NewDatabaseRandom(prg, LOGQ, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -164,8 +165,8 @@ func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 }
 
 func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
-	prg := NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, N, d)
+	prg := rand.NewRandomBufPRG()
+	db := NewDatabaseRandom(prg, LOGQ, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -174,8 +175,8 @@ func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
 }
 
 func testLHE(t *testing.T, N uint64, d uint64) {
-	prg := NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(N, 1024)
+	prg := rand.NewRandomBufPRG()
+	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
 	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
 	server := NewServer(db)
@@ -186,10 +187,10 @@ func testLHE(t *testing.T, N uint64, d uint64) {
 }
 
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
-	prg := NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, N, d)
+	prg := rand.NewRandomBufPRG()
+	db := NewDatabaseRandom(prg, LOGQ, N, d)
 
-	seed := RandomPRGKey()
+	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
@@ -197,10 +198,10 @@ func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 }
 
 func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64) {
-	prg := NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, N, d)
+	prg := rand.NewRandomBufPRG()
+	db := NewDatabaseRandom(prg, LOGQ, N, d)
 
-	seed := RandomPRGKey()
+	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
@@ -208,11 +209,11 @@ func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64)
 }
 
 func testLHECompressed(t *testing.T, N uint64, d uint64) {
-	prg := NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(N, 1024)
+	prg := rand.NewRandomBufPRG()
+	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
 	db := NewDatabaseRandomFixedParams(prg, N, d, params)
 
-	seed := RandomPRGKey()
+	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
