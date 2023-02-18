@@ -11,12 +11,11 @@ import (
 	"github.com/henrycg/simplepir/rand"
 )
 
-const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
 
 func testServerEncode[T matrix.Elem](t *testing.T, N, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, N, d)
 	server := NewServer(db)
 
 	var b bytes.Buffer
@@ -117,75 +116,9 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	}
 }
 
-func testDBInit[T matrix.Elem](t *testing.T, N uint64, d uint64, vals []uint64) *Database[T] {
-	db := NewDatabase[T](LOGQ, N, d, vals)
-
-	for i := uint64(0); i < N; i++ {
-		if db.GetElem(i) != (i + 1) {
-			t.Fatal("Reconstruct failed!")
-		}
-	}
-
-	return db
-}
-
-// Test that DB packing methods are correct, when each database entry is ~ 1 Z_p elem.
-func testDBMediumEntries[T matrix.Elem](t *testing.T) {
-	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(9), vals)
-
-	if db.Info.Packing != 1 || db.Info.Ne != 1 {
-		t.Fail()
-	}
-}
-
-func TestDBMediumEntries32(t *testing.T) {
-  testDBMediumEntries[matrix.Elem32](t)
-}
-
-func TestDBMediumEntries64(t *testing.T) {
-  testDBMediumEntries[matrix.Elem64](t)
-}
-
-// Test that DB packing methods are correct, when multiple database entries fit in 1 Z_p elem.
-func testDBSmallEntries[T matrix.Elem](t *testing.T) {
-	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(3), vals)
-
-	if db.Info.Packing <= 1 || db.Info.Ne != 1 {
-		t.Fail()
-	}
-}
-
-func TestDBSmallEntries32(t *testing.T) {
-  testDBSmallEntries[matrix.Elem32](t)
-}
-
-func TestDBSmallEntries64(t *testing.T) {
-  testDBSmallEntries[matrix.Elem64](t)
-}
-
-// Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
-func testDBLargeEntries[T matrix.Elem](t *testing.T) {
-	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(12), vals)
-
-	if db.Info.Packing != 0 || db.Info.Ne <= 1 {
-		t.Fatal()
-	}
-}
-
-func TestDBLargeEntries32(t *testing.T) {
-  testDBLargeEntries[matrix.Elem64](t)
-}
-
-func TestDBLargeEntries64(t *testing.T) {
-  testDBLargeEntries[matrix.Elem64](t)
-}
-
 func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -195,7 +128,7 @@ func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64
 
 func testSimplePirMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -205,7 +138,7 @@ func testSimplePirMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index ui
 
 func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
+	params := lwe.NewParamsFixedP(T(0).Size(), N, 1024)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
 
 	server := NewServer(db)
@@ -217,7 +150,7 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 
 func testSimplePirCompressed[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, N, d)
 
 	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
@@ -228,7 +161,7 @@ func testSimplePirCompressed[T matrix.Elem](t *testing.T, N uint64, d uint64, in
 
 func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, N, d)
 
 	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
@@ -239,7 +172,7 @@ func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64
 
 func testLHECompressed[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
+	params := lwe.NewParamsFixedP(T(0).Size(), N, 1024)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
 
 	seed := rand.RandomPRGKey()

@@ -20,6 +20,7 @@ type Elem64 = C.Elem64
 
 type Elem interface {
     Elem32 | Elem64
+    Size() uint64
 }
 
 type IoRandSource interface {
@@ -33,12 +34,12 @@ type Matrix[T Elem] struct {
 	data []T
 }
 
-func (m *Matrix[T]) Is32Bit() bool {
-  return reflect.TypeOf(m.data[0]) == reflect.TypeOf(Elem32(0))
+func (Elem32) Size() uint64 {
+  return 32
 }
 
-func (m *Matrix[T]) Is64Bit() bool {
-  return reflect.TypeOf(m.data[0]) == reflect.TypeOf(Elem64(0))
+func (Elem64) Size() uint64 {
+  return 64
 }
 
 func (m *Matrix[T]) Copy() *Matrix[T] {
@@ -76,12 +77,10 @@ func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
 	return out
 }
 
-func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, logmod uint64, mod uint64) *Matrix[T] {
+func Rand[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-	m := big.NewInt(int64(mod))
-	if mod == 0 {
-		m = big.NewInt(1 << logmod)
-	}
+	m := big.NewInt(1)
+  m.Lsh(m, uint(T(0).Size()))
 	for i := 0; i < len(out.data); i++ {
 		v, err := rand.Int(src, m)
 		if err != nil {
@@ -194,12 +193,13 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
   samplef := lwe.GaussSample32
-  if out.Is32Bit() {
+  switch out.data[0].Size() {
+    case 32:
       // Do nothing
-  } else if out.Is64Bit() {
-    samplef = lwe.GaussSample64
-  } else {
-    panic("Shouldn't get here")
+    case 64:
+      samplef = lwe.GaussSample64
+    default:
+      panic("Shouldn't get here")
   }
 
 	for i := 0; i < len(out.data); i++ {

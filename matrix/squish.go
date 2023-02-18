@@ -37,22 +37,24 @@ func (m *Matrix[T]) Squish() {
 }
 
 func (m *Matrix[T]) SquishBasis() uint64 {
-  if m.Is32Bit() {
-    return squishBasis32
-  } else if m.Is64Bit() {
-    return squishBasis64
-  } else {
-    panic("Shouldn't get here")
+  switch m.data[0].Size() {
+    case 32:
+      return squishBasis32
+    case 64:
+      return squishBasis64
+    default:
+      panic("Shouldn't get here")
   }
 }
 
 func (m *Matrix[T]) SquishRatio() uint64 {
-  if m.Is32Bit() {
+  switch m.data[0].Size() {
+      case 32:
     return squishRatio32
-  } else if m.Is64Bit() {
+      case 64:
     return squishRatio64
-  } else {
-    panic("Shouldn't get here")
+    default:
+      panic("Shouldn't get here")
   }
 }
 

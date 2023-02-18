@@ -84,12 +84,13 @@ func Mul[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  if a.Is32Bit() {
-    C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
-  } else if a.Is64Bit() {
-    C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
-  } else {
-    panic("Shouldn't get here")
+  switch a.data[0].Size() {
+    case 32:
+      C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
+    case 64:
+      C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
+    default:
+      panic("Shouldn't get here")
   }
 
   return out
@@ -113,12 +114,13 @@ func MulVec[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  if a.Is32Bit() {
+  switch a.data[0].Size() {
+    case 32:
       C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-  } else if a.Is64Bit() {
+    case 64:
       C.matMulVec64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-  } else {
-    panic("Shouldn't get here")
+    default:
+      panic("Shouldn't get here")
   }
 
 	return out
@@ -141,12 +143,13 @@ func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  if a.Is32Bit() {
+  switch a.data[0].Size() {
+    case 32:
       C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-  } else if a.Is64Bit() {
+    case 64:
       C.matMulVecPacked64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-  } else {
-    panic("Shouldn't get here")
+    default:
+      panic("Shouldn't get here")
   }
 
 	out.DropLastrows(8)

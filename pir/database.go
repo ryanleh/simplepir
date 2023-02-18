@@ -57,10 +57,17 @@ func (db *Database[T]) Squish() {
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
 func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
-	q := uint64(1 << Info.Params.Logq)
+  q := uint64(0)
+  shortQ := (Info.Params.Logq != 64)
+  if shortQ {
+	  q = uint64(1 << Info.Params.Logq)
+  }
 
 	for i, _ := range vals {
-		vals[i] = (vals[i] + Info.P()/2) % q
+		vals[i] = (vals[i] + Info.P()/2) 
+    if shortQ {
+      vals[i] %= q
+    }
 		vals[i] = vals[i] % Info.P()
 	}
 
@@ -200,8 +207,8 @@ func (Info *DBInfo) P() uint64 {
 	return Info.Params.P
 }
 
-func NewDatabaseRandom[T matrix.Elem](prg *rand.BufPRGReader, logq, num, rowLength uint64) *Database[T] {
-	info := NewDBInfo(logq, num, rowLength)
+func NewDatabaseRandom[T matrix.Elem](prg *rand.BufPRGReader, num, rowLength uint64) *Database[T] {
+	info := NewDBInfo(T(0).Size(), num, rowLength)
 	return NewDatabaseRandomFixedParams[T](prg, num, rowLength, info.Params)
 }
 
@@ -214,7 +221,7 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, 0, mod)
+	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M)
 
 	// clear overflow cols
 	row := db.Info.L - 1
@@ -229,8 +236,8 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 	return db
 }
 
-func NewDatabase[T matrix.Elem](logq, num, rowLength uint64, vals []uint64) *Database[T] {
-	info := NewDBInfo(logq, num, rowLength)
+func NewDatabase[T matrix.Elem](num, rowLength uint64, vals []uint64) *Database[T] {
+	info := NewDBInfo(T(0).Size(), num, rowLength)
 	return NewDatabaseFixedParams[T](num, rowLength, vals, info.Params)
 }
 
