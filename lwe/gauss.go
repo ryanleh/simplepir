@@ -1,4 +1,4 @@
-package matrix
+package lwe
 
 import (
 	mrand "math/rand"
@@ -30,16 +30,16 @@ var cdf_table32 = [...]float64{
 // sampler included in his dgs library:
 //
 //	https://github.com/malb/dgs
-func GaussSample(src mrand.Source) int64 {
+func gaussSample(src mrand.Source, cdf_table []float64, skip int) int64 {
 	math_src := mrand.New(src)
 
 	var x int64
 	var y float64
 	for {
-		x = int64(math_src.Intn(len(cdf_table)))
+		x = int64(math_src.Intn(len(cdf_table) * skip))
 		y = math_src.Float64()
 
-		if y < cdf_table[x] {
+		if y < cdf_table[x/int64(skip)] {
 			break
 		}
 	}
@@ -49,4 +49,12 @@ func GaussSample(src mrand.Source) int64 {
 	}
 
 	return x
+}
+
+func GaussSample32(src mrand.Source) int64 {
+  return gaussSample(src, cdf_table32[:], 1)
+}
+
+func GaussSample64(src mrand.Source) int64 {
+  return gaussSample(src, cdf_table64[:], cdf_skip64)
 }
