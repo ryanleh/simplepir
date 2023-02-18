@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/henrycg/simplepir/matrix"
 	"github.com/henrycg/simplepir/lwe"
 	"github.com/henrycg/simplepir/rand"
 )
@@ -13,9 +14,9 @@ import (
 const LOGQ = uint64(32)
 const SEC_PARAM = uint64(1 << 10)
 
-func testServerEncode(t *testing.T, N, d uint64) {
+func testServerEncode[T matrix.Elem](t *testing.T, N, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, LOGQ, N, d)
+	db := NewDatabaseRandom[T](prg, LOGQ, N, d)
 	server := NewServer(db)
 
 	var b bytes.Buffer
@@ -26,7 +27,7 @@ func testServerEncode(t *testing.T, N, d uint64) {
 	}
 
 	dec := gob.NewDecoder(&b)
-	var server2 Server
+	var server2 Server[T]
 	err = dec.Decode(&server2)
 	if err != nil {
 		panic("Decoding failed")
@@ -54,11 +55,11 @@ func testServerEncode(t *testing.T, N, d uint64) {
 }
 
 func TestServerEncode(t *testing.T) {
-	testServerEncode(t, uint64(1<<20), uint64(8))
+	testServerEncode[matrix.Elem32](t, uint64(1<<20), uint64(8))
 }
 
 // Run full PIR scheme (offline + online phases).
-func runPIR(client *Client, server *Server, db *Database, i uint64) {
+func runPIR[T matrix.Elem](client *Client[T], server *Server[T], db *Database[T], i uint64) {
 	secret, query := client.Query(i)
 	answer := server.Answer(query)
 
@@ -71,7 +72,7 @@ func runPIR(client *Client, server *Server, db *Database, i uint64) {
 	}
 }
 
-func runPIRmany(client *Client, server *Server, db *Database, i uint64) {
+func runPIRmany[T matrix.Elem](client *Client[T], server *Server[T], db *Database[T], i uint64) {
 	secret, query := client.Query(i)
 	answer := server.Answer(query)
 
@@ -88,7 +89,7 @@ func runPIRmany(client *Client, server *Server, db *Database, i uint64) {
 	}
 }
 
-func runLHE(client *Client, server *Server, db *Database, arr []uint64) {
+func runLHE[T matrix.Elem](client *Client[T], server *Server[T], db *Database[T], arr []uint64) {
 	secret, query := client.QueryLHE(arr)
 	answer := server.Answer(query)
 
@@ -112,8 +113,8 @@ func runLHE(client *Client, server *Server, db *Database, arr []uint64) {
 	}
 }
 
-func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
-	db := NewDatabase(LOGQ, N, d, vals)
+func testDBInit[T matrix.Elem](t *testing.T, N uint64, d uint64, vals []uint64) *Database[T] {
+	db := NewDatabase[T](LOGQ, N, d, vals)
 
 	for i := uint64(0); i < N; i++ {
 		if db.GetElem(i) != (i + 1) {
@@ -127,7 +128,7 @@ func testDBInit(t *testing.T, N uint64, d uint64, vals []uint64) *Database {
 // Test that DB packing methods are correct, when each database entry is ~ 1 Z_p elem.
 func TestDBMediumEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit(t, uint64(4), uint64(9), vals)
+	db := testDBInit[matrix.Elem32](t, uint64(4), uint64(9), vals)
 
 	if db.Info.Packing != 1 || db.Info.Ne != 1 {
 		t.FailNow()
@@ -137,7 +138,7 @@ func TestDBMediumEntries(t *testing.T) {
 // Test that DB packing methods are correct, when multiple database entries fit in 1 Z_p elem.
 func TestDBSmallEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit(t, uint64(4), uint64(3), vals)
+	db := testDBInit[matrix.Elem32](t, uint64(4), uint64(3), vals)
 
 	if db.Info.Packing <= 1 || db.Info.Ne != 1 {
 		t.FailNow()
@@ -147,7 +148,7 @@ func TestDBSmallEntries(t *testing.T) {
 // Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
 func TestDBLargeEntries(t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit(t, uint64(4), uint64(12), vals)
+	db := testDBInit[matrix.Elem32](t, uint64(4), uint64(12), vals)
 
 	if db.Info.Packing != 0 || db.Info.Ne <= 1 {
 		panic("Should not happen.")
@@ -156,7 +157,7 @@ func TestDBLargeEntries(t *testing.T) {
 
 func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, LOGQ, N, d)
+	db := NewDatabaseRandom[matrix.Elem32] (prg, LOGQ, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -166,7 +167,7 @@ func testSimplePir(t *testing.T, N uint64, d uint64, index uint64) {
 
 func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, LOGQ, N, d)
+	db := NewDatabaseRandom[matrix.Elem32] (prg, LOGQ, N, d)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -177,7 +178,7 @@ func testSimplePirMany(t *testing.T, N uint64, d uint64, index uint64) {
 func testLHE(t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
 	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
-	db := NewDatabaseRandomFixedParams(prg, N, d, params)
+	db := NewDatabaseRandomFixedParams[matrix.Elem32](prg, N, d, params)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -188,7 +189,7 @@ func testLHE(t *testing.T, N uint64, d uint64) {
 
 func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, LOGQ, N, d)
+	db := NewDatabaseRandom[matrix.Elem32](prg, LOGQ, N, d)
 
 	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
@@ -199,7 +200,7 @@ func testSimplePirCompressed(t *testing.T, N uint64, d uint64, index uint64) {
 
 func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
-	db := NewDatabaseRandom(prg, LOGQ, N, d)
+	db := NewDatabaseRandom[matrix.Elem32](prg, LOGQ, N, d)
 
 	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)
@@ -211,7 +212,7 @@ func testSimplePirCompressedMany(t *testing.T, N uint64, d uint64, index uint64)
 func testLHECompressed(t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
 	params := lwe.NewParamsFixedP(LOGQ, N, 1024)
-	db := NewDatabaseRandomFixedParams(prg, N, d, params)
+	db := NewDatabaseRandomFixedParams[matrix.Elem32](prg, N, d, params)
 
 	seed := rand.RandomPRGKey()
 	server := NewServerSeed(db, seed)

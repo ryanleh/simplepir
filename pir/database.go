@@ -22,41 +22,36 @@ type DBInfo struct {
 	M uint64 // database height
 
 	// For in-memory db compression
-	Basis     uint64
 	Squishing uint64
 	Cols      uint64
 
 	Params *lwe.Params
 }
 
-type Database struct {
+type Database[T matrix.Elem] struct {
 	Info *DBInfo
-	Data *matrix.Matrix
+	Data *matrix.Matrix[T]
 }
 
-func (db *Database) Copy() *Database {
-	return &Database{
+func (db *Database[T]) Copy() *Database[T] {
+	return &Database[T]{
 		Info: db.Info,
 		Data: db.Data.Copy(),
 	}
 }
 
-func (db *Database) Squish() {
+func (db *Database[T]) Squish() {
 	//fmt.Printf("Original db dims: ")
 	//db.Data.Dim()
 
-	db.Info.Basis = matrix.SquishBasis
-	db.Info.Squishing = matrix.SquishRatio
-	db.Info.Cols = db.Data.Cols()
-	db.Data.Squish(db.Info.Basis, db.Info.Squishing)
-
-	//fmt.Printf("After squishing, with compression factor %d: ", db.Info.Squishing)
-	//db.Data.Dim()
-
 	// Check that Params allow for this compression
-	if (db.Info.P() > (1 << db.Info.Basis)) || (db.Info.Params.Logq < db.Info.Basis*db.Info.Squishing) {
+	if !db.Data.CanSquish(db.Info.P()) {
 		panic("Bad Params")
 	}
+
+	db.Info.Squishing = db.Data.SquishRatio()
+	db.Info.Cols = db.Data.Cols()
+	db.Data.Squish()
 }
 
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
@@ -78,7 +73,7 @@ func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
 	return val
 }
 
-func (db *Database) GetElem(i uint64) uint64 {
+func (db *Database[T]) GetElem(i uint64) uint64 {
 	if i >= db.Info.Num {
 		panic("Index out of range")
 	}
@@ -205,13 +200,13 @@ func (Info *DBInfo) P() uint64 {
 	return Info.Params.P
 }
 
-func NewDatabaseRandom(prg *rand.BufPRGReader, logq, num, rowLength uint64) *Database {
+func NewDatabaseRandom[T matrix.Elem](prg *rand.BufPRGReader, logq, num, rowLength uint64) *Database[T] {
 	info := NewDBInfo(logq, num, rowLength)
-	return NewDatabaseRandomFixedParams(prg, num, rowLength, info.Params)
+	return NewDatabaseRandomFixedParams[T](prg, num, rowLength, info.Params)
 }
 
-func NewDatabaseRandomFixedParams(prg *rand.BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database {
-	db := new(Database)
+func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, rowLength uint64, params *lwe.Params) *Database[T] {
+	db := new(Database[T])
 	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
 
 	mod := db.Info.P()
@@ -219,7 +214,7 @@ func NewDatabaseRandomFixedParams(prg *rand.BufPRGReader, Num, rowLength uint64,
 		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand(prg, db.Info.L, db.Info.M, 0, mod)
+	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, 0, mod)
 
 	// clear overflow cols
 	row := db.Info.L - 1
@@ -234,15 +229,15 @@ func NewDatabaseRandomFixedParams(prg *rand.BufPRGReader, Num, rowLength uint64,
 	return db
 }
 
-func NewDatabase(logq, num, rowLength uint64, vals []uint64) *Database {
+func NewDatabase[T matrix.Elem](logq, num, rowLength uint64, vals []uint64) *Database[T] {
 	info := NewDBInfo(logq, num, rowLength)
-	return NewDatabaseFixedParams(num, rowLength, vals, info.Params)
+	return NewDatabaseFixedParams[T](num, rowLength, vals, info.Params)
 }
 
-func NewDatabaseFixedParams(Num, rowLength uint64, vals []uint64, params *lwe.Params) *Database {
-	db := new(Database)
+func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64, params *lwe.Params) *Database[T] {
+	db := new(Database[T])
 	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
-	db.Data = matrix.Zeros(db.Info.L, db.Info.M)
+	db.Data = matrix.Zeros[T](db.Info.L, db.Info.M)
 
 	if uint64(len(vals)) != Num {
 		panic("Bad input db")

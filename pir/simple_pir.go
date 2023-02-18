@@ -6,54 +6,59 @@ import "github.com/henrycg/simplepir/lwe"
 import "github.com/henrycg/simplepir/rand"
 import "github.com/henrycg/simplepir/matrix"
 
-type Server struct {
+type Server[T matrix.Elem] struct {
 	params  *lwe.Params
-	matrixA *matrix.Matrix
+	matrixA *matrix.Matrix[T]
 
-	db   *Database
-	hint *matrix.Matrix
+	db   *Database[T]
+	hint *matrix.Matrix[T]
 }
 
-type Client struct {
+type Client[T matrix.Elem] struct {
 	prg *rand.BufPRGReader
 
 	params *lwe.Params
-	hint   *matrix.Matrix
+	hint   *matrix.Matrix[T]
 
-	matrixA *matrix.Matrix
+	matrixA *matrix.Matrix[T]
 	dbinfo  *DBInfo
 }
 
-type Query = matrix.Matrix
-type Secret struct {
-	query  *Query
-	secret *matrix.Matrix
+type Query[T matrix.Elem] struct {
+  query *matrix.Matrix[T]
+}
+
+type Secret[T matrix.Elem] struct {
+	query  *matrix.Matrix[T]
+	secret *matrix.Matrix[T]
 	index  uint64
 }
-type SecretLHE struct {
-	query  *Query
-	secret *matrix.Matrix
+type SecretLHE[T matrix.Elem] struct {
+	query  *matrix.Matrix[T]
+	secret *matrix.Matrix[T]
 	arr    []uint64
 }
 
-type Answer = matrix.Matrix
+type Answer[T matrix.Elem] struct {
+  answer *matrix.Matrix[T]
+}
 
-func NewServer(db *Database) *Server {
+func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
 	prg := rand.NewRandomBufPRG()
 	params := db.Info.Params
-	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
+	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
 }
 
-func NewServerSeed(db *Database, seed *rand.PRGKey) *Server {
+func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T] {
 	prg := rand.NewBufPRG(rand.NewPRG(seed))
 	params := db.Info.Params
-	matrixA := matrix.Rand(prg, db.Info.M, params.N, params.Logq, 0)
+	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, params.Logq, 0)
 	return setupServer(db, matrixA)
 }
 
-func setupServer(db *Database, matrixA *matrix.Matrix) *Server {
-	s := &Server{
+func setupServer[T matrix.Elem](db *Database[T], matrixA *matrix.Matrix[T]) *Server[T] {
+	s := &Server[T]{
 		params:  db.Info.Params,
 		matrixA: matrixA,
 		db:      db.Copy(),
@@ -69,23 +74,23 @@ func setupServer(db *Database, matrixA *matrix.Matrix) *Server {
 	return s
 }
 
-func (s *Server) Hint() *matrix.Matrix {
+func (s *Server[T]) Hint() *matrix.Matrix[T] {
 	return s.hint
 }
 
-func (s *Server) MatrixA() *matrix.Matrix {
+func (s *Server[T]) MatrixA() *matrix.Matrix[T] {
 	return s.matrixA
 }
 
-func (s *Server) Params() *lwe.Params {
+func (s *Server[T]) Params() *lwe.Params {
 	return s.params
 }
 
-func (s *Server) Get(i uint64) uint64 {
+func (s *Server[T]) Get(i uint64) uint64 {
 	return s.db.GetElem(i)
 }
 
-func (s *Server) GobEncode() ([]byte, error) {
+func (s *Server[T]) GobEncode() ([]byte, error) {
 	buf := new(bytes.Buffer)
 	enc := gob.NewEncoder(buf)
 	err := enc.Encode(s.params)
@@ -107,7 +112,7 @@ func (s *Server) GobEncode() ([]byte, error) {
 	return buf.Bytes(), err
 }
 
-func (s *Server) GobDecode(buf []byte) error {
+func (s *Server[T]) GobDecode(buf []byte) error {
 	b := bytes.NewBuffer(buf)
 	dec := gob.NewDecoder(b)
 	err := dec.Decode(&s.params)
@@ -129,8 +134,8 @@ func (s *Server) GobDecode(buf []byte) error {
 	return err
 }
 
-func NewClient(hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Client {
-	return &Client{
+func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T], dbinfo *DBInfo) *Client[T] {
+	return &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
@@ -141,13 +146,13 @@ func NewClient(hint *matrix.Matrix, matrixA *matrix.Matrix, dbinfo *DBInfo) *Cli
 	}
 }
 
-func (c *Client) Query(i uint64) (*Secret, *Query) {
-	s := &Secret{
-		secret: matrix.Rand(c.prg, c.params.N, 1, c.params.Logq, 0),
+func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
+	s := &Secret[T]{
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, c.params.Logq, 0),
 		index:  i,
 	}
 
-	err := matrix.Gaussian(c.prg, c.dbinfo.M, 1)
+	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -158,12 +163,12 @@ func (c *Client) Query(i uint64) (*Secret, *Query) {
 		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
 	}
 
-	s.query = query.Copy()
+	s.query = query
 
-	return s, query
+	return s, &Query[T]{ query }
 }
 
-func (c *Client) QueryLHE(arr []uint64) (*SecretLHE, *Query) {
+func (c *Client[T]) QueryLHE(arr []uint64) (*SecretLHE[T], *Query[T]) {
 	if uint64(len(arr)) != c.dbinfo.M {
 		panic("Parameter mismatch")
 	}
@@ -177,12 +182,12 @@ func (c *Client) QueryLHE(arr []uint64) (*SecretLHE, *Query) {
 		panic("LHE requires p | q.")
 	}
 
-	s := &SecretLHE{
-		secret: matrix.Rand(c.prg, c.params.N, 1, c.params.Logq, 0),
+	s := &SecretLHE[T]{
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, c.params.Logq, 0),
 		arr:    arr,
 	}
 
-	err := matrix.Gaussian(c.prg, c.dbinfo.M, 1)
+	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -197,17 +202,14 @@ func (c *Client) QueryLHE(arr []uint64) (*SecretLHE, *Query) {
 
 	s.query = query.Copy()
 
-	return s, query
+	return s, &Query[T]{ query }
 }
 
-func (s *Server) Answer(query *Query) *Answer {
-	return matrix.MulVecPacked(s.db.Data,
-		query,
-		s.db.Info.Basis,
-		s.db.Info.Squishing)
+func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
+	return &Answer[T]{ matrix.MulVecPacked(s.db.Data, query.query) }
 }
 
-func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
+func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
@@ -218,22 +220,22 @@ func (c *Client) Recover(secret *Secret, ans *Answer) uint64 {
 
 	row := secret.index / c.dbinfo.M
 	interm := matrix.Mul(c.hint, secret.secret)
-	ans.Sub(interm)
+	ans.answer.Sub(interm)
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := ans.Get(j, 0) + offset
+		noised := ans.answer.Get(j, 0) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
-	ans.Add(interm)
+	ans.answer.Add(interm)
 
 	return c.dbinfo.ReconstructElem(vals, secret.index)
 }
 
-func (c *Client) RecoverMany(secret *Secret, ans *Answer) []uint64 {
+func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
@@ -243,16 +245,16 @@ func (c *Client) RecoverMany(secret *Secret, ans *Answer) []uint64 {
 	offset = (1 << c.params.Logq) - offset
 
 	interm := matrix.Mul(c.hint, secret.secret)
-	ans.Sub(interm)
+	ans.answer.Sub(interm)
 
-	num_rows := ans.Rows() / c.dbinfo.Ne
+	num_rows := ans.answer.Rows() / c.dbinfo.Ne
 	i := secret.index % c.dbinfo.M
 	out := make([]uint64, num_rows)
 	for row := uint64(0); row < num_rows; row++ {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
 		for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-			noised := ans.Get(j, 0) + offset
+			noised := ans.answer.Get(j, 0) + offset
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
 			//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
@@ -260,12 +262,12 @@ func (c *Client) RecoverMany(secret *Secret, ans *Answer) []uint64 {
 		out[row] = c.dbinfo.ReconstructElem(vals, i)
 		i += c.dbinfo.M
 	}
-	ans.Add(interm)
+	ans.answer.Add(interm)
 
 	return out
 }
 
-func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
+func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ans *Answer[T]) []uint64 {
 	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) {
 		panic("Not yet supported")
 	}
@@ -279,7 +281,7 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 	offset = (1 << c.params.Logq) - offset
 
 	interm := matrix.Mul(c.hint, secret.secret)
-	ans.Sub(interm)
+	ans.answer.Sub(interm)
 
 	norm := uint64(0)
 	for _, elem := range secret.arr {
@@ -287,25 +289,25 @@ func (c *Client) RecoverManyLHE(secret *SecretLHE, ans *Answer) []uint64 {
 	}
 	norm %= 2
 
-	out := make([]uint64, ans.Rows())
-	for row := uint64(0); row < ans.Rows(); row++ {
-		noised := ans.Get(row, 0) + offset
+	out := make([]uint64, ans.answer.Rows())
+	for row := uint64(0); row < ans.answer.Rows(); row++ {
+		noised := ans.answer.Get(row, 0) + offset
 		denoised := c.params.Round(noised)
 		out[row] = (denoised + ratio*norm) % c.params.P
 	}
-	ans.Add(interm)
+	ans.answer.Add(interm)
 
 	return out
 }
 
-func (c *Client) GetM() uint64 {
+func (c *Client[T]) GetM() uint64 {
 	return c.dbinfo.M
 }
 
-func (c *Client) GetL() uint64 {
+func (c *Client[T]) GetL() uint64 {
 	return c.dbinfo.L
 }
 
-func (c *Client) GetP() uint64 {
+func (c *Client[T]) GetP() uint64 {
 	return c.params.P
 }

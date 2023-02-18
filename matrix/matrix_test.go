@@ -38,7 +38,7 @@ func TestGob(t *testing.T) {
 	}
 }
 
-func testAdd[U elem](t *testing.T, logq uint64, r1 uint64, c1 uint64) {
+func testAdd[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64) {
   rand := rand.NewRandomBufPRG()
 
   m := Rand[U](rand, r1, c1, logq, 1<<logq)
@@ -62,7 +62,7 @@ func TestAdd64(t *testing.T) {
   testAdd[Elem64](t, 32, 72, 110)
 }
 
-func testMul[U elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
+func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   rand := rand.NewRandomBufPRG()
 
   m1 := Rand[U](rand, r1, c1, logq, 1<<logq)
@@ -94,7 +94,7 @@ func TestMul64(t *testing.T) {
   testMul[Elem64](t, 32, 2, 8, 8, 7)
 }
 
-func testGauss[U elem](t *testing.T, r1 uint64, c1 uint64) {
+func testGauss[U Elem](t *testing.T, r1 uint64, c1 uint64) {
   rand := rand.NewRandomBufPRG()
   Gaussian[U](rand, r1, c1)
 }
