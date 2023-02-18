@@ -1,5 +1,7 @@
 package lwe
 
+//import "fmt"
+//import "math/rand"
 import "testing"
 
 func TestTooManySamples(t *testing.T) {
@@ -41,3 +43,20 @@ func TestGood64(t *testing.T) {
 		t.Fail()
 	}
 }
+
+/*
+func TestGauss64(t *testing.T) {
+  r := rand.New(rand.NewSource(99))
+  bins := make([]int, 1000)
+
+  for i := 0; i<1024*1024*4; i++ {
+    v := GaussSample64(r)
+    v = (v / 8000) + 500
+    bins[v] += 1
+  }
+
+  for i := 0; i<len(bins); i++ {
+    fmt.Printf("bin[%v] = %v\n", i-500, bins[i])
+  }
+}
+*/
