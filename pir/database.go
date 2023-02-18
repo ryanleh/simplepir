@@ -45,8 +45,8 @@ func (db *Database) Squish() {
 	//fmt.Printf("Original db dims: ")
 	//db.Data.Dim()
 
-	db.Info.Basis = 10
-	db.Info.Squishing = 3
+	db.Info.Basis = matrix.SquishBasis
+	db.Info.Squishing = matrix.SquishRatio
 	db.Info.Cols = db.Data.Cols()
 	db.Data.Squish(db.Info.Basis, db.Info.Squishing)
 

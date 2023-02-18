@@ -1,14 +1,7 @@
-
 #include "matrix.h"
 #include <stdio.h>
 
-// Hard-coded, to allow for compiler optimizations:
-#define COMPRESSION 3
-#define BASIS       10
-#define BASIS2      BASIS*2
-#define MASK        (1<<BASIS)-1
-
-void matMul(Elem *out, const Elem *a, const Elem *b,
+void matMul64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols, size_t bCols)
 {
   for (size_t i = 0; i < aRows; i++) {
@@ -20,10 +13,10 @@ void matMul(Elem *out, const Elem *a, const Elem *b,
   }
 }
 
-void matMulVec(Elem *out, const Elem *a, const Elem *b,
+void matMulVec64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols)
 {
-  Elem tmp;
+  Elem64 tmp;
   for (size_t i = 0; i < aRows; i++) {
     tmp = 0;
     for (size_t j = 0; j < aCols; j++) {
@@ -33,12 +26,12 @@ void matMulVec(Elem *out, const Elem *a, const Elem *b,
   }
 }
 
-void matMulVecPacked(Elem *out, const Elem *a, const Elem *b,
+void matMulVecPacked64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols)
 {
-  Elem db, db2, db3, db4, db5, db6, db7, db8;
-  Elem val, val2, val3, val4, val5, val6, val7, val8;
-  Elem tmp, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
+  Elem64 db, db2, db3, db4, db5, db6, db7, db8;
+  Elem64 val, val2, val3, val4, val5, val6, val7, val8;
+  Elem64 tmp, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, tmp8;
   size_t index = 0;
   size_t index2;
 
@@ -63,14 +56,14 @@ void matMulVecPacked(Elem *out, const Elem *a, const Elem *b,
       db7 = a[index+6*aCols];
       db8 = a[index+7*aCols];
 
-      val  = db & MASK;
-      val2 = db2 & MASK;
-      val3 = db3 & MASK;
-      val4 = db4 & MASK;
-      val5 = db5 & MASK;
-      val6 = db6 & MASK;
-      val7 = db7 & MASK;
-      val8 = db8 & MASK;
+      val  = db & MASK_64;
+      val2 = db2 & MASK_64;
+      val3 = db3 & MASK_64;
+      val4 = db4 & MASK_64;
+      val5 = db5 & MASK_64;
+      val6 = db6 & MASK_64;
+      val7 = db7 & MASK_64;
+      val8 = db8 & MASK_64;
       tmp  += val*b[index2];
       tmp2 += val2*b[index2];
       tmp3 += val3*b[index2];
@@ -81,14 +74,14 @@ void matMulVecPacked(Elem *out, const Elem *a, const Elem *b,
       tmp8 += val8*b[index2];
       index2 += 1;
 
-      val  = (db >> BASIS) & MASK;
-      val2 = (db2 >> BASIS) & MASK;
-      val3 = (db3 >> BASIS) & MASK;
-      val4 = (db4 >> BASIS) & MASK;
-      val5 = (db5 >> BASIS) & MASK;
-      val6 = (db6 >> BASIS) & MASK;
-      val7 = (db7 >> BASIS) & MASK;
-      val8 = (db8 >> BASIS) & MASK;
+      val  = (db >> BASIS_64) & MASK_64;
+      val2 = (db2 >> BASIS_64) & MASK_64;
+      val3 = (db3 >> BASIS_64) & MASK_64;
+      val4 = (db4 >> BASIS_64) & MASK_64;
+      val5 = (db5 >> BASIS_64) & MASK_64;
+      val6 = (db6 >> BASIS_64) & MASK_64;
+      val7 = (db7 >> BASIS_64) & MASK_64;
+      val8 = (db8 >> BASIS_64) & MASK_64;
       tmp  += val*b[index2];
       tmp2 += val2*b[index2];
       tmp3 += val3*b[index2];
@@ -99,14 +92,14 @@ void matMulVecPacked(Elem *out, const Elem *a, const Elem *b,
       tmp8 += val8*b[index2];
       index2 += 1;
 
-      val  = (db >> BASIS2) & MASK;
-      val2 = (db2 >> BASIS2) & MASK;
-      val3 = (db3 >> BASIS2) & MASK;
-      val4 = (db4 >> BASIS2) & MASK;
-      val5 = (db5 >> BASIS2) & MASK;
-      val6 = (db6 >> BASIS2) & MASK;
-      val7 = (db7 >> BASIS2) & MASK;
-      val8 = (db8 >> BASIS2) & MASK;
+      val  = (db >> BASIS2_64) & MASK_64;
+      val2 = (db2 >> BASIS2_64) & MASK_64;
+      val3 = (db3 >> BASIS2_64) & MASK_64;
+      val4 = (db4 >> BASIS2_64) & MASK_64;
+      val5 = (db5 >> BASIS2_64) & MASK_64;
+      val6 = (db6 >> BASIS2_64) & MASK_64;
+      val7 = (db7 >> BASIS2_64) & MASK_64;
+      val8 = (db8 >> BASIS2_64) & MASK_64;
       tmp  += val*b[index2];
       tmp2 += val2*b[index2];
       tmp3 += val3*b[index2];
