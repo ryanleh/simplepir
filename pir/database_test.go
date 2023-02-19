@@ -19,21 +19,23 @@ func testDBInit[T matrix.Elem](t *testing.T, N uint64, d uint64, vals []uint64) 
 }
 
 // Test that DB packing methods are correct, when each database entry is ~ 1 Z_p elem.
-func testDBMediumEntries[T matrix.Elem](t *testing.T) {
+func testDBMediumEntries[T matrix.Elem](t *testing.T) *Database[T] {
 	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(9), vals)
-
-	if db.Info.Packing != 1 || db.Info.Ne != 1 {
-		t.Fail()
-	}
+	return testDBInit[T](t, uint64(4), uint64(9), vals)
 }
 
 func TestDBMediumEntries32(t *testing.T) {
-  testDBMediumEntries[matrix.Elem32](t)
+  db := testDBMediumEntries[matrix.Elem32](t)
+  if db.Info.Packing != 1 || db.Info.Ne != 1 {
+    t.Fail()
+  }
 }
 
 func TestDBMediumEntries64(t *testing.T) {
-  testDBMediumEntries[matrix.Elem64](t)
+  db := testDBMediumEntries[matrix.Elem64](t)
+  if db.Info.Packing != 2 || db.Info.Ne != 1 {
+    t.Fail()
+  }
 }
 
 // Test that DB packing methods are correct, when multiple database entries fit in 1 Z_p elem.
@@ -57,7 +59,7 @@ func TestDBSmallEntries64(t *testing.T) {
 // Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
 func testDBLargeEntries[T matrix.Elem](t *testing.T) {
 	vals := []uint64{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(12), vals)
+	db := testDBInit[T](t, uint64(4), uint64(21), vals)
 
 	if db.Info.Packing != 0 || db.Info.Ne <= 1 {
 		t.Fatal()

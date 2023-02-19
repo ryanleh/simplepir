@@ -107,8 +107,8 @@ func (db *Database[T]) GetElem(i uint64) uint64 {
 // each consisting of row_length bits.
 func numEntries(N, row_length, p uint64) (uint64, uint64, uint64) {
 	if float64(row_length) <= math.Log2(float64(p)) {
+    logp := uint64(math.Log2(float64(p)))
 		// pack multiple DB entries into a single Z_p elem
-		logp := uint64(math.Log2(float64(p)))
 		entries_per_elem := logp / row_length
 		db_entries := uint64(math.Ceil(float64(N) / float64(entries_per_elem)))
 		if db_entries == 0 || db_entries > N {
