@@ -34,18 +34,17 @@ func (a *Matrix[T]) AddWithMismatch(b *Matrix[T]) {
 	}
 }
 
-func (a *Matrix[T]) AddUint64(val uint64) {
-	v := T(val)
+func (a *Matrix[T]) AddConst(val T) {
 	for i := uint64(0); i < a.cols*a.rows; i++ {
-		a.data[i] += v
+		a.data[i] += val
 	}
 }
 
-func (a *Matrix[T]) AddAt(val, i, j uint64) {
+func (a *Matrix[T]) AddAt(i, j uint64, val T) {
 	if (i >= a.rows) || (j >= a.cols) {
 		panic("Out of bounds")
 	}
-	a.Set(a.Get(i, j)+val, i, j)
+	a.Set(i, j, a.Get(i, j)+val)
 }
 
 func (a *Matrix[T]) Sub(b *Matrix[T]) {
@@ -58,10 +57,9 @@ func (a *Matrix[T]) Sub(b *Matrix[T]) {
 	}
 }
 
-func (a *Matrix[T]) SubUint64(val uint64) {
-	v := T(val)
+func (a *Matrix[T]) SubConst(val T) {
 	for i := uint64(0); i < a.cols*a.rows; i++ {
-		a.data[i] -= v
+		a.data[i] -= val
 	}
 }
 

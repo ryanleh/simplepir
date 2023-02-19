@@ -110,17 +110,17 @@ func (m *Matrix[T]) ReduceMod(p uint64) {
 	}
 }
 
-func (m *Matrix[T]) Get(i, j uint64) uint64 {
+func (m *Matrix[T]) Get(i, j uint64) T {
 	if i >= m.rows {
 		panic("Too many rows!")
 	}
 	if j >= m.cols {
 		panic("Too many cols!")
 	}
-	return uint64(m.data[i*m.cols+j])
+	return m.data[i*m.cols+j]
 }
 
-func (m *Matrix[T]) Set(val, i, j uint64) {
+func (m *Matrix[T]) Set(i, j uint64, val T) {
 	if i >= m.rows {
 		panic("Too many rows!")
 	}
