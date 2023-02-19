@@ -65,8 +65,8 @@ func TestAdd64(t *testing.T) {
 func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   rand := rand.NewRandomBufPRG()
 
-  m1 := Rand[U](rand, r1, c1, 12309)
-  m2 := Rand[U](rand, r2, c2, 9123)
+  m1 := Rand[U](rand, r1, c1, 0)
+  m2 := Rand[U](rand, r2, c2, 0)
   z := Zeros[U](r2, c2)
   zout := Zeros[U](r1, c2)
 
@@ -98,6 +98,14 @@ func TestMul32(t *testing.T) {
 
 func TestMul64(t *testing.T) {
   testMul[Elem64](t, 32, 2, 8, 8, 7)
+}
+
+func TestMulVec32(t *testing.T) {
+  testMul[Elem32](t, 32, 60, 83, 83, 1)
+}
+
+func TestMulVec64(t *testing.T) {
+  testMul[Elem64](t, 32, 60, 83, 83, 1)
 }
 
 func testGauss[U Elem](t *testing.T, r1 uint64, c1 uint64) {
