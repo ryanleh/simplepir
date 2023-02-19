@@ -3,7 +3,7 @@ package pir
 import (
   "bytes"
   "encoding/gob"
-  "log"
+  //"log"
 )
 
 import (
@@ -149,13 +149,13 @@ func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T],
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	s := &Secret[T]{
-		//secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
-		secret: matrix.Zeros[T](c.params.N, 1),
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
+		//secret: matrix.Zeros[T](c.params.N, 1),
 		index:  i,
 	}
 
-	//err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-	err := matrix.Zeros[T](c.dbinfo.M, 1)
+	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
+	//err := matrix.Zeros[T](c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -198,7 +198,7 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 		noised := uint64(ans.answer.Get(j, 0)) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
-		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
+		//log.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
 	ans.answer.Add(interm)
 
@@ -206,6 +206,10 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 }
 
 func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
+  if c.dbinfo.Packing > 1 {
+    panic("Not supported")
+  }
+
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
@@ -219,21 +223,21 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
 
-	num_rows := ans.answer.Rows() / c.dbinfo.Ne
-	i := secret.index % c.dbinfo.M
-	out := make([]uint64, num_rows)
-	for row := uint64(0); row < num_rows; row++ {
+  num_values := (ans.answer.Rows() / c.dbinfo.Ne)
+	out := make([]uint64, num_values)
+	for row := uint64(0); row < ans.answer.Rows(); row += c.dbinfo.Ne {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
-		for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-			noised := uint64(ans.answer.Get(j, 0)) + offset
+		for j := uint64(0); j < c.dbinfo.Ne; j++ {
+			noised := uint64(ans.answer.Get(row + j, 0)) + offset
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
-			//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
 		}
-		out[row] = c.dbinfo.ReconstructElem(vals, i)
-		log.Printf("Reconstructing row %d: %d\n", row, out[row])
-		i += c.dbinfo.M
+
+		for j := uint64(0); j < c.dbinfo.Packing; j++ {
+		  out[row] = c.dbinfo.ReconstructElem(vals, j)
+    }
+		//log.Printf("Reconstructing row %d: %d\n", row, out[row])
 	}
 	ans.answer.Add(interm)
 

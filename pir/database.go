@@ -1,7 +1,6 @@
 package pir
 
 import (
-  "fmt"
   "log"
   "math"
 )
@@ -46,7 +45,7 @@ func (db *Database[T]) Copy() *Database[T] {
 }
 
 func (db *Database[T]) Squish() {
-	//fmt.Printf("Original db dims: ")
+	//log.Printf("Original db dims: ")
 	//db.Data.Dim()
 
 	// Check that Params allow for this compression
@@ -62,7 +61,7 @@ func (db *Database[T]) Squish() {
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
 func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
-  //fmt.Printf("vals: %v\n", vals)
+  //log.Printf("vals: %v\n", vals)
   shortQ := (Info.Params.Logq != 64)
 
 	for i, _ := range vals {
@@ -76,9 +75,9 @@ func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
 	val := Reconstruct_from_base_p(Info.P(), vals)
 
 	if Info.Packing > 0 {
-		val = Base_p((1 << Info.RowLength), val, index%Info.Packing)
+		val = Base_p((1 << Info.RowLength), val, Info.Packing - (index%Info.Packing) - 1)
 	}
-  log.Printf("value: %v; p=%v", val, Info.P())
+  //log.Printf("value: %v; p=%v", val, Info.P())
 
 	return val
 }
@@ -115,7 +114,7 @@ func numEntries(N, row_length, p uint64) (uint64, uint64, uint64) {
 		entries_per_elem := logp / row_length
 		db_entries := uint64(math.Ceil(float64(N) / float64(entries_per_elem)))
 		if db_entries == 0 || db_entries > N {
-			fmt.Printf("Num entries is %d; N is %d\n", db_entries, N)
+			//fmt.Printf("Num entries is %d; N is %d\n", db_entries, N)
 			panic("Should not happen")
 		}
 		return db_entries, 1, entries_per_elem
@@ -178,7 +177,7 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 		Info.X += 1
 	}
 
-	fmt.Printf("Total packed db size is ~%f MB\n",
+	log.Printf("Total packed db size is ~%f MB\n",
 		float64(Info.L*Info.M)*math.Log2(float64(Info.P()))/(1024.0*1024.0*8.0))
 
 	if dbElems > Info.L*Info.M {
@@ -224,7 +223,12 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, (1<<rowLength))
+  maxSize := db.Info.P()
+  if float64(rowLength) < math.Log2(float64(db.Info.P())) {
+    maxSize = (1 << rowLength)
+  }
+  //log.Printf("max size %v", maxSize)
+	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, maxSize)
 
 	// clear overflow cols
 	row := db.Info.L - 1

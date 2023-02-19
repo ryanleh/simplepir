@@ -42,21 +42,6 @@ var plaintextModulus64 = map[uint64]uint64{
 	1 << 23: 101550,
 }
 
-/*
-var plaintextModulus64 = map[uint64]uint64{
-	1 << 13: 10000,
-	1 << 14: 10000,
-	1 << 15: 10000,
-	1 << 16: 10000,
-	1 << 17: 10000,
-	1 << 18: 10000,
-	1 << 19: 10000,
-	1 << 20: 10000,
-	1 << 21: 10000,
-	1 << 22: 10000,
-	1 << 23: 10000,
-}*/
-
 type Params struct {
 	N     uint64  // LWE secret dimension
 	Sigma float64 // LWE error distribution stddev
