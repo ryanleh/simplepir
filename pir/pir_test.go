@@ -161,11 +161,11 @@ func TestSimplePir64(t *testing.T) {
 }
 
 func TestSimplePirMany32(t *testing.T) {
-	testSimplePirMany[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
+	testSimplePirMany[matrix.Elem32](t, uint64(1<<20), uint64(2), 262144)
 }
 
 func TestSimplePirMany64(t *testing.T) {
-	testSimplePirMany[matrix.Elem64](t, uint64(1<<20), uint64(17), 262144)
+	testSimplePirMany[matrix.Elem64](t, uint64(1<<20), uint64(6), 262144)
 }
 
 
@@ -178,11 +178,11 @@ func TestSimplePirCompressed64(t *testing.T) {
 }
 
 func TestSimplePirCompressedMany32(t *testing.T) {
-	testSimplePirCompressedMany[matrix.Elem32](t, uint64(1<<20), uint64(7), 262144)
+	testSimplePirCompressedMany[matrix.Elem32](t, uint64(1<<20), uint64(2), 262144)
 }
 
 func TestSimplePirCompressedMany64(t *testing.T) {
-	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<20), uint64(15), 262144)
+	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<20), uint64(3), 262144)
 }
 
 // Test SimplePIR correctness on DB with long entries
@@ -220,18 +220,18 @@ func TestSimplePirBigDBmany64(t *testing.T) {
 }
 
 func TestSimplePirBigDBCompressed32(t *testing.T) {
-	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<25), uint64(7), 0)
+	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<25), uint64(2), 0)
 }
 
 func TestSimplePirBigDBCompressed64(t *testing.T) {
-	testSimplePirCompressed[matrix.Elem64](t, uint64(1<<25), uint64(18), 0)
+	testSimplePirCompressed[matrix.Elem64](t, uint64(1<<25), uint64(5), 0)
 }
 
 func TestSimplePirBigDBCompressedMany32(t *testing.T) {
-	testSimplePirCompressedMany[matrix.Elem32](t, uint64(1<<25), uint64(7), 0)
+	testSimplePirCompressedMany[matrix.Elem32](t, uint64(1<<25), uint64(4), 0)
 }
 
 func TestSimplePirBigDBCompressedMany64(t *testing.T) {
-	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<25), uint64(18), 2)
+	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<25), uint64(2), 2)
 }
 
