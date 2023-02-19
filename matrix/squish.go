@@ -25,7 +25,10 @@ func (m *Matrix[T]) Squish() {
 			for k := uint64(0); k < delta; k++ {
 				if delta*j+k < m.cols {
 					val := m.Get(i, delta*j+k)
-					n.data[i*n.cols+j] += T(val << (k * basis))
+          if val >= (1 << m.SquishBasis()) {
+            panic("Database entry too large to squish")
+          }
+					n.data[i*n.cols+j] += (val << (k * basis))
 				}
 			}
 		}

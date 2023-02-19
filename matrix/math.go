@@ -40,6 +40,12 @@ func (a *Matrix[T]) MulConst(val T) {
 	}
 }
 
+func (a *Matrix[T]) ModConst(val T) {
+	for i := uint64(0); i < a.cols*a.rows; i++ {
+		a.data[i] %= val
+	}
+}
+
 func (a *Matrix[T]) AddConst(val T) {
 	for i := uint64(0); i < a.cols*a.rows; i++ {
 		a.data[i] += val
@@ -133,6 +139,7 @@ func MulVec[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	if a.cols*a.SquishRatio() != b.rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
+		fmt.Printf("Want %v == %v", a.cols*a.SquishRatio(), b.rows)
 		panic("Dimension mismatch")
 	}
 	if b.cols != 1 {

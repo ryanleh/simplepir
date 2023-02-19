@@ -38,7 +38,7 @@ func TestGob(t *testing.T) {
 	}
 }
 
-func testAdd[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64) {
+func testAdd[U Elem](t *testing.T, r1 uint64, c1 uint64) {
   rand := rand.NewRandomBufPRG()
 
   m := Rand[U](rand, r1, c1, 0)
@@ -55,14 +55,14 @@ func testAdd[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64) {
 }
 
 func TestAdd32(t *testing.T) {
-  testAdd[Elem32](t, 32, 2, 2)
+  testAdd[Elem32](t, 2, 2)
 }
 
 func TestAdd64(t *testing.T) {
-  testAdd[Elem64](t, 32, 72, 110)
+  testAdd[Elem64](t, 72, 110)
 }
 
-func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
+func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   rand := rand.NewRandomBufPRG()
 
   m1 := Rand[U](rand, r1, c1, 0)
@@ -93,19 +93,19 @@ func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64,
 }
 
 func TestMul32(t *testing.T) {
-  testMul[Elem32](t, 32, 2, 8, 8, 7)
+  testMul[Elem32](t, 2, 8, 8, 7)
 }
 
 func TestMul64(t *testing.T) {
-  testMul[Elem64](t, 32, 2, 8, 8, 7)
+  testMul[Elem64](t, 2, 8, 8, 7)
 }
 
 func TestMulVec32(t *testing.T) {
-  testMul[Elem32](t, 32, 60, 83, 83, 1)
+  testMul[Elem32](t, 60, 83, 83, 1)
 }
 
 func TestMulVec64(t *testing.T) {
-  testMul[Elem64](t, 32, 60, 83, 83, 1)
+  testMul[Elem64](t, 60, 83, 83, 1)
 }
 
 func testGauss[U Elem](t *testing.T, r1 uint64, c1 uint64) {
@@ -119,4 +119,39 @@ func TestGauss32(t *testing.T) {
 
 func TestGauss64(t *testing.T) {
   testGauss[Elem64](t, 2, 8)
+}
+
+func testMulPacked[U Elem](t *testing.T, r1 uint64, c1 uint64) {
+  rand := rand.NewRandomBufPRG()
+
+  m2 := Rand[U](rand, c1, 1, 0)
+  m1 := Rand[U](rand, r1, c1, 1<<m2.SquishBasis())
+  
+  res1 := Mul(m1, m2)
+  m1.Squish()
+
+  newCols := m1.Cols() * m1.SquishRatio()
+  m2.AppendZeros(newCols - m2.Rows())
+
+  res2 := MulVecPacked(m1, m2)
+
+  if !res1.Equals(res2) {
+    t.Fail()
+  }
+}
+
+func TestMulVecPacked32(t *testing.T) {
+  testMulPacked[Elem32](t, 8, 13)
+}
+
+func TestMulPacked64(t *testing.T) {
+  testMulPacked[Elem64](t, 8, 13)
+}
+
+func TestMulVecPackedBig32(t *testing.T) {
+  testMulPacked[Elem32](t, 812, 1391)
+}
+
+func TestMulPackedBig64(t *testing.T) {
+  testMulPacked[Elem64](t, 810, 132)
 }
