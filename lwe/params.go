@@ -28,7 +28,6 @@ var plaintextModulus32 = map[uint64]uint64{
 }
 
 /* Maps #samples ==> plaintext modulus */
-/*
 var plaintextModulus64 = map[uint64]uint64{
 	1 << 13: 574457,
 	1 << 14: 483058,
@@ -41,8 +40,9 @@ var plaintextModulus64 = map[uint64]uint64{
 	1 << 21: 143614,
 	1 << 22: 120764,
 	1 << 23: 101550,
-}*/
+}
 
+/*
 var plaintextModulus64 = map[uint64]uint64{
 	1 << 13: 10000,
 	1 << 14: 10000,
@@ -55,7 +55,7 @@ var plaintextModulus64 = map[uint64]uint64{
 	1 << 21: 10000,
 	1 << 22: 10000,
 	1 << 23: 10000,
-}
+}*/
 
 type Params struct {
 	N     uint64  // LWE secret dimension

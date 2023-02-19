@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"log"
 	"testing"
 
 	"github.com/henrycg/simplepir/matrix"
@@ -64,7 +65,6 @@ func TestServerEncode64(t *testing.T) {
 func runPIR[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], i uint64) {
 	secret, query := client.Query(i)
 	answer := server.Answer(query)
-
 	val := client.Recover(secret, answer)
 
 	if db.GetElem(i) != val {
@@ -81,12 +81,12 @@ func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T
 	vals := client.RecoverMany(secret, answer)
 
 	col_index := i % db.Info.M
+  fmt.Printf("Rowlen: %v Ne: %v\n", len(vals), db.Info.Ne)
 	for row := uint64(0); row < uint64(len(vals)); row++ {
 		index := row*db.Info.M + col_index
 		if db.GetElem(index) != vals[row] {
-			fmt.Printf("Querying index %d: Got %d instead of %d\n",
+			t.Fatalf("Querying index %d: Got %d instead of %d\n",
 				index, vals[row], db.GetElem(index))
-			t.Fatal("Reconstruct failed!")
 		}
 	}
 }
@@ -95,6 +95,15 @@ func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T
 func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
 	db := NewDatabaseRandom[T](prg, N, d)
+  for i := uint64(0); i<db.Data.Rows(); i++ {
+    for j := uint64(0); j<db.Data.Cols(); j++ {
+      db.Data.Set(i,j,T(0))//-T(db.Info.P()/2))
+    }
+    db.Data.Set(i,i,T(0000))
+  }
+  //db.Data.AddConst(T(db.Info.P()/2))
+  //db.Data.Print()
+  log.Printf("===%v", db.Data.Get(0,0))
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -140,6 +149,11 @@ func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64
 func TestSimplePir32(t *testing.T) {
 	testSimplePir[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
 }
+
+func TestSimplePirSmall64(t *testing.T) {
+	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(8), 34)
+}
+
 
 func TestSimplePir64(t *testing.T) {
 	testSimplePir[matrix.Elem64](t, uint64(1<<20), uint64(8), 262144)

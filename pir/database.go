@@ -2,6 +2,7 @@ package pir
 
 import (
   "fmt"
+  "log"
   "math"
 )
 
@@ -62,16 +63,12 @@ func (db *Database[T]) Squish() {
 // Z_p elements that encode the same database entry are stacked vertically below each other.
 func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
   //fmt.Printf("vals: %v\n", vals)
-  q := uint64(0)
   shortQ := (Info.Params.Logq != 64)
-  if shortQ {
-	  q = uint64(1 << Info.Params.Logq)
-  }
 
 	for i, _ := range vals {
 		vals[i] = (vals[i] + Info.P()/2) 
     if shortQ {
-      vals[i] %= q
+      vals[i] %= (1 << 32)
     }
 		vals[i] = vals[i] % Info.P()
 	}
@@ -81,6 +78,7 @@ func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
 	if Info.Packing > 0 {
 		val = Base_p((1 << Info.RowLength), val, index%Info.Packing)
 	}
+  log.Printf("value: %v; p=%v", val, Info.P())
 
 	return val
 }
@@ -226,7 +224,7 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, db.Info.P())
+	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, (1<<rowLength))
 
 	// clear overflow cols
 	row := db.Info.L - 1
@@ -243,7 +241,7 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubConst(T(db.Info.P()) / 2)
+  db.Data.SubConst(T(db.Info.P() / 2))
 
 	return db
 }

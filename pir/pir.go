@@ -3,7 +3,7 @@ package pir
 import (
   "bytes"
   "encoding/gob"
-//  "fmt"
+  "log"
 )
 
 import (
@@ -66,7 +66,7 @@ func setupServer[T matrix.Elem](db *Database[T], matrixA *matrix.Matrix[T]) *Ser
 		hint:    matrix.Mul(db.Data, matrixA),
 	}
 
-	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
+	// map the database entries to [0, p] (rather than [-p/2, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
 	// is memory-bandwidth-bound
 	s.db.Data.AddConst(T(s.params.P / 2))
@@ -149,11 +149,13 @@ func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T],
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	s := &Secret[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
+		//secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
+		secret: matrix.Zeros[T](c.params.N, 1),
 		index:  i,
 	}
 
-	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
+	//err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
+	err := matrix.Zeros[T](c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -230,6 +232,7 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 			//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
 		}
 		out[row] = c.dbinfo.ReconstructElem(vals, i)
+		log.Printf("Reconstructing row %d: %d\n", row, out[row])
 		i += c.dbinfo.M
 	}
 	ans.answer.Add(interm)
