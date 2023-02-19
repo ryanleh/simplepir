@@ -46,14 +46,14 @@ type Answer[T matrix.Elem] struct {
 func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
 	prg := rand.NewRandomBufPRG()
 	params := db.Info.Params
-	matrixA := matrix.Rand[T](prg, db.Info.M, params.N)
+	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, 0)
 	return setupServer(db, matrixA)
 }
 
 func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T] {
 	prg := rand.NewBufPRG(rand.NewPRG(seed))
 	params := db.Info.Params
-	matrixA := matrix.Rand[T](prg, db.Info.M, params.N)
+	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, 0)
 	return setupServer(db, matrixA)
 }
 
@@ -148,7 +148,7 @@ func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T],
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	s := &Secret[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1),
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
 		index:  i,
 	}
 
@@ -183,7 +183,7 @@ func (c *Client[T]) QueryLHE(arr []uint64) (*SecretLHE[T], *Query[T]) {
 	}
 
 	s := &SecretLHE[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1),
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
 		arr:    arr,
 	}
 

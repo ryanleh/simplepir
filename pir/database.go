@@ -208,7 +208,7 @@ func (Info *DBInfo) P() uint64 {
 }
 
 func NewDatabaseRandom[T matrix.Elem](prg *rand.BufPRGReader, num, rowLength uint64) *Database[T] {
-	info := NewDBInfo(T(0).Size(), num, rowLength)
+	info := NewDBInfo(T(0).Bitlen(), num, rowLength)
 	return NewDatabaseRandomFixedParams[T](prg, num, rowLength, info.Params)
 }
 
@@ -221,7 +221,7 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 		mod = (1 << rowLength)
 	}
 
-	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M)
+	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, db.Info.P())
 
 	// clear overflow cols
 	row := db.Info.L - 1
@@ -237,7 +237,7 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 }
 
 func NewDatabase[T matrix.Elem](num, rowLength uint64, vals []uint64) *Database[T] {
-	info := NewDBInfo(T(0).Size(), num, rowLength)
+	info := NewDBInfo(T(0).Bitlen(), num, rowLength)
 	return NewDatabaseFixedParams[T](num, rowLength, vals, info.Params)
 }
 

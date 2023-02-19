@@ -84,7 +84,7 @@ func Mul[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  switch a.data[0].Size() {
+  switch T(0).Bitlen() {
     case 32:
       C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
     case 64:
@@ -114,7 +114,7 @@ func MulVec[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  switch a.data[0].Size() {
+  switch T(0).Bitlen() {
     case 32:
       C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
     case 64:
@@ -143,7 +143,7 @@ func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
   aPtr := unsafe.Pointer(&a.data[0])
   bPtr := unsafe.Pointer(&b.data[0])
 
-  switch a.data[0].Size() {
+  switch T(0).Bitlen() {
     case 32:
       C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
     case 64:

@@ -37,7 +37,7 @@ func (m *Matrix[T]) Squish() {
 }
 
 func (m *Matrix[T]) SquishBasis() uint64 {
-  switch m.data[0].Size() {
+  switch T(0).Bitlen() {
     case 32:
       return squishBasis32
     case 64:
@@ -48,7 +48,7 @@ func (m *Matrix[T]) SquishBasis() uint64 {
 }
 
 func (m *Matrix[T]) SquishRatio() uint64 {
-  switch m.data[0].Size() {
+  switch T(0).Bitlen() {
       case 32:
     return squishRatio32
       case 64:

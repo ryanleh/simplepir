@@ -20,7 +20,7 @@ type Elem64 = C.Elem64
 
 type Elem interface {
     Elem32 | Elem64
-    Size() uint64
+    Bitlen() uint64
 }
 
 type IoRandSource interface {
@@ -34,11 +34,11 @@ type Matrix[T Elem] struct {
 	data []T
 }
 
-func (Elem32) Size() uint64 {
+func (Elem32) Bitlen() uint64 {
   return 32
 }
 
-func (Elem64) Size() uint64 {
+func (Elem64) Bitlen() uint64 {
   return 64
 }
 
@@ -77,10 +77,14 @@ func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
 	return out
 }
 
-func Rand[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
+// If mod is 0, then generate uniform random int of type T
+func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-	m := big.NewInt(1)
-  m.Lsh(m, uint(T(0).Size()))
+  m := big.NewInt(int64(mod))
+  if mod == 0 {
+    m.SetInt64(1)
+    m.Lsh(m, uint(T(0).Bitlen()))
+  }
 	for i := 0; i < len(out.data); i++ {
 		v, err := rand.Int(src, m)
 		if err != nil {
@@ -193,7 +197,7 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
   samplef := lwe.GaussSample32
-  switch out.data[0].Size() {
+  switch T(0).Bitlen() {
     case 32:
       // Do nothing
     case 64:

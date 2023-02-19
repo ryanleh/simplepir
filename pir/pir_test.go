@@ -138,7 +138,7 @@ func testSimplePirMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index ui
 
 func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(T(0).Size(), N, 1024)
+	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 1024)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
 
 	server := NewServer(db)
@@ -172,7 +172,7 @@ func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64
 
 func testLHECompressed[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(T(0).Size(), N, 1024)
+	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 1024)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
 
 	seed := rand.RandomPRGKey()
