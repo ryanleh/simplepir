@@ -76,12 +76,18 @@ func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64,
   }
 
   out := Mul(m1, m2)
-  tmp := U(0)
-  for i := uint64(0); i < c1; i++ {
-    tmp += (U(m1.Get(0, i)) * U(m2.Get(i, 0)))
+  res := Zeros[U](r1, c2)
+  for i := uint64(0); i < r1; i++ {
+    for j := uint64(0); j < c2; j++ {
+      tmp := U(0)
+      for k := uint64(0); k < c1; k++ {
+        tmp += (U(m1.Get(i, k)) * U(m2.Get(k, j)))
+      }
+      res.Set(i, j, tmp)
+    }
   }
 
-  if tmp != U(out.Get(0,0)) {
+  if !out.Equals(res) {
     t.Fail()
   }
 }

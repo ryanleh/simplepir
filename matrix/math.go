@@ -34,6 +34,12 @@ func (a *Matrix[T]) AddWithMismatch(b *Matrix[T]) {
 	}
 }
 
+func (a *Matrix[T]) MulConst(val T) {
+	for i := uint64(0); i < a.cols*a.rows; i++ {
+		a.data[i] *= val
+	}
+}
+
 func (a *Matrix[T]) AddConst(val T) {
 	for i := uint64(0); i < a.cols*a.rows; i++ {
 		a.data[i] += val

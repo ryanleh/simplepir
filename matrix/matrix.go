@@ -10,7 +10,6 @@ import (
 	"io"
 	"math/big"
 	mrand "math/rand"
-  "reflect"
 
   "github.com/henrycg/simplepir/lwe"
 )
@@ -190,7 +189,14 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 	if m.Rows() != n.Rows() {
 		return false
 	}
-	return reflect.DeepEqual(m.data, n.data)
+
+  for i := 0; i < len(m.data); i++ {
+    if m.data[i] != n.data[i] {
+      return false
+    }
+  }
+
+	return true
 }
 
 
