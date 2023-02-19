@@ -177,6 +177,10 @@ func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
 }
 
 func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
+  if c.dbinfo.Packing > 1 {
+    panic("Not supported")
+  }
+
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
