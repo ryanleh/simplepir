@@ -1,7 +1,6 @@
 package pir
 
 import "math"
-import "math/rand"
 
 // Returns the i-th elem in the representation of m in base p.
 func Base_p(p, m, i uint64) uint64 {
@@ -26,16 +25,6 @@ func Reconstruct_from_base_p(p uint64, vals []uint64) uint64 {
 func Compute_num_entries_base_p(p, log_q uint64) uint64 {
 	log_p := math.Log2(float64(p))
 	return uint64(math.Ceil(float64(log_q) / log_p))
-}
-
-func RandArray(length, mod uint64) []uint64 {
-	res := make([]uint64, length)
-
-	for i := 0; i < len(res); i++ {
-		res[i] = rand.Uint64() % mod
-	}
-
-	return res
 }
 
 func PrevPowerOfTwo(v uint64) uint64 {

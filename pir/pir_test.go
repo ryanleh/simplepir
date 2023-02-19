@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/henrycg/simplepir/matrix"
-	"github.com/henrycg/simplepir/lwe"
 	"github.com/henrycg/simplepir/rand"
 )
 
@@ -92,29 +91,6 @@ func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T
 	}
 }
 
-func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], arr []uint64) {
-	secret, query := client.QueryLHE(arr)
-	answer := server.Answer(query)
-
-	vals := client.RecoverManyLHE(secret, answer)
-
-	at := uint64(0)
-	mod := db.Info.P()
-	for i := 0; i < len(vals); i++ {
-		should_be := uint64(0)
-		for j := uint64(0); (j < uint64(len(arr))) && (at < db.Info.Num); j++ {
-			should_be += arr[j] * db.GetElem(at)
-			at += 1
-		}
-		should_be %= mod
-
-		if should_be != vals[i] {
-			fmt.Printf("Row %d: Got %d instead of %d (mod %d)\n",
-				i, vals[i], should_be, mod)
-			t.Fatal("Reconstruct failed!")
-		}
-	}
-}
 
 func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
@@ -136,17 +112,6 @@ func testSimplePirMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index ui
 	runPIRmany(t, client, server, db, index)
 }
 
-func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
-	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 1024)
-	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
-
-	server := NewServer(db)
-	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
-
-	arr := RandArray(db.Info.M, db.Info.P())
-	runLHE(t, client, server, db, arr)
-}
 
 func testSimplePirCompressed[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
@@ -170,18 +135,6 @@ func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64
 	runPIRmany(t, client, server, db, index)
 }
 
-func testLHECompressed[T matrix.Elem](t *testing.T, N uint64, d uint64) {
-	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 1024)
-	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
-
-	seed := rand.RandomPRGKey()
-	server := NewServerSeed(db, seed)
-	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
-
-	arr := RandArray(db.Info.M, db.Info.P())
-	runLHE(t, client, server, db, arr)
-}
 
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir32(t *testing.T) {
@@ -200,29 +153,6 @@ func TestSimplePirMany64(t *testing.T) {
 	testSimplePirMany[matrix.Elem64](t, uint64(1<<20), uint64(8), 262144)
 }
 
-func TestLHE32(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<20), uint64(9))
-}
-
-func TestLHE64(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<20), uint64(9))
-}
-
-func TestLHE32_2(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<20), uint64(8))
-}
-
-func TestLHE64_2(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<20), uint64(8))
-}
-
-func TestLHE32_3(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<20), uint64(6))
-}
-
-func TestLHE64_3(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<20), uint64(6))
-}
 
 func TestSimplePirCompressed32(t *testing.T) {
 	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
@@ -238,14 +168,6 @@ func TestSimplePirCompressedMany32(t *testing.T) {
 
 func TestSimplePirCompressedMany64(t *testing.T) {
 	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<20), uint64(8), 262144)
-}
-
-func TestLHECompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<20), uint64(9))
-}
-
-func TestLHECompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<20), uint64(9))
 }
 
 // Test SimplePIR correctness on DB with long entries
@@ -282,14 +204,6 @@ func TestSimplePirBigDBmany64(t *testing.T) {
 	testSimplePirMany[matrix.Elem64](t, uint64(1<<25), uint64(7), 0)
 }
 
-func TestLHEBigDB32(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<25), uint64(9))
-}
-
-func TestLHEBigDB64(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<25), uint64(9))
-}
-
 func TestSimplePirBigDBCompressed32(t *testing.T) {
 	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<25), uint64(7), 0)
 }
@@ -306,10 +220,3 @@ func TestSimplePirBigDBCompressedMany64(t *testing.T) {
 	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<25), uint64(7), 0)
 }
 
-func TestLHEBigDBCompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<25), uint64(9))
-}
-
-func TestLHEBigDBCompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<25), uint64(9))
-}

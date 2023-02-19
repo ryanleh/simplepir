@@ -6,9 +6,11 @@ import (
 //  "fmt"
 )
 
-import "github.com/henrycg/simplepir/lwe"
-import "github.com/henrycg/simplepir/rand"
-import "github.com/henrycg/simplepir/matrix"
+import (
+  "github.com/henrycg/simplepir/lwe"
+  "github.com/henrycg/simplepir/rand"
+  "github.com/henrycg/simplepir/matrix"
+)
 
 type Server[T matrix.Elem] struct {
 	params  *lwe.Params
@@ -36,11 +38,6 @@ type Secret[T matrix.Elem] struct {
 	query  *matrix.Matrix[T]
 	secret *matrix.Matrix[T]
 	index  uint64
-}
-type SecretLHE[T matrix.Elem] struct {
-	query  *matrix.Matrix[T]
-	secret *matrix.Matrix[T]
-	arr    []uint64
 }
 
 type Answer[T matrix.Elem] struct {
@@ -72,7 +69,7 @@ func setupServer[T matrix.Elem](db *Database[T], matrixA *matrix.Matrix[T]) *Ser
 	// map the database entries to [0, p] (rather than [-p/1, p/2]) and then
 	// pack the database more tightly in memory, because the online computation
 	// is memory-bandwidth-bound
-	s.db.Data.AddUint64(s.params.P / 2)
+	s.db.Data.AddConst(T(s.params.P / 2))
 	s.db.Squish()
 
 	return s
@@ -160,7 +157,7 @@ func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
-	query.AddAt(c.params.Delta, i%c.dbinfo.M, 0)
+	query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
 
 	// Pad the query to match the dimensions of the compressed DB
 	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
@@ -172,42 +169,6 @@ func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	return s, &Query[T]{ query }
 }
 
-func (c *Client[T]) QueryLHE(arr []uint64) (*SecretLHE[T], *Query[T]) {
-	if uint64(len(arr)) != c.dbinfo.M {
-		panic("Parameter mismatch")
-	}
-
-	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
-		panic("Not yet supported.")
-	}
-
-	// checks that p is a power of 2 (since q must be)
-	if (c.params.P & (c.params.P - 1)) != 0 {
-		panic("LHE requires p | q.")
-	}
-
-	s := &SecretLHE[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
-		arr:    arr,
-	}
-
-	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-
-	query := matrix.Mul(c.matrixA, s.secret)
-	query.Add(err)
-	for j := uint64(0); j < c.dbinfo.M; j++ {
-		query.AddAt(c.params.Delta*arr[j], j, 0)
-	}
-
-	// Pad the query to match the dimensions of the compressed DB
-	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
-		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
-	}
-
-	s.query = query.Copy()
-
-	return s, &Query[T]{ query }
-}
 
 func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
 	return &Answer[T]{ matrix.MulVecPacked(s.db.Data, query.query) }
@@ -215,12 +176,15 @@ func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
 
 func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 	ratio := c.params.P / 2
-	offset := T(0)
+	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += T(ratio) * T(secret.query.Get(j, 0))
+		offset += ratio * uint64(secret.query.Get(j, 0))
 	}
 
   offset = -offset
+  if T(0).Bitlen() == 32 {
+    offset %= (1<<32)
+  }
 
 	row := secret.index / c.dbinfo.M
 	interm := matrix.Mul(c.hint, secret.secret)
@@ -229,7 +193,7 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := ans.answer.Get(j, 0) + uint64(offset)
+		noised := uint64(ans.answer.Get(j, 0)) + offset
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
@@ -241,11 +205,14 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 
 func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 	ratio := c.params.P / 2
-	offset := T(0)
+	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += T(ratio) * T(secret.query.Get(j, 0))
+		offset += ratio * uint64(secret.query.Get(j, 0))
 	}
-	offset = -offset
+	offset = -offset 
+  if T(0).Bitlen() == 32 {
+    offset %= (1<<32)
+  }
 
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
@@ -257,7 +224,7 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
 		for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-			noised := ans.answer.Get(j, 0) + uint64(offset)
+			noised := uint64(ans.answer.Get(j, 0)) + offset
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
 			//fmt.Printf("Reconstructing row %d: %d\n", j, denoised)
@@ -270,37 +237,6 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 	return out
 }
 
-func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ans *Answer[T]) []uint64 {
-	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) {
-		panic("Not yet supported")
-	}
-
-	ratio := c.params.P / 2
-	offset := T(0)
-	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += T(ratio) * T(secret.query.Get(j, 0))
-	}
-	offset = -offset
-
-	interm := matrix.Mul(c.hint, secret.secret)
-	ans.answer.Sub(interm)
-
-	norm := uint64(0)
-	for _, elem := range secret.arr {
-		norm += elem
-	}
-	norm %= 2
-
-	out := make([]uint64, ans.answer.Rows())
-	for row := uint64(0); row < ans.answer.Rows(); row++ {
-		noised := ans.answer.Get(row, 0) + uint64(offset)
-		denoised := c.params.Round(noised)
-		out[row] = (denoised + ratio*norm) % c.params.P
-	}
-	ans.answer.Add(interm)
-
-	return out
-}
 
 func (c *Client[T]) GetM() uint64 {
 	return c.dbinfo.M

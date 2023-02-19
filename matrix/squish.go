@@ -4,6 +4,8 @@ package matrix
 // #include "matrix.h"
 import "C"
 
+import "log"
+
 const squishBasis32 = C.BASIS_32
 const squishRatio32 = C.COMPRESSION_32
 
@@ -26,7 +28,7 @@ func (m *Matrix[T]) Squish() {
 				if delta*j+k < m.cols {
 					val := m.Get(i, delta*j+k)
           if val >= (1 << m.SquishBasis()) {
-            panic("Database entry too large to squish")
+            log.Fatalf("Database entry %v too large to squish", val)
           }
 					n.data[i*n.cols+j] += (val << (k * basis))
 				}

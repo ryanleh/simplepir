@@ -22,8 +22,8 @@ type DBInfo struct {
 	// must be in range [1, ne] and must be a divisor of ne;
 	// represents the number of times the scheme is repeated.
 
-	L uint64 // database width
-	M uint64 // database height
+	L uint64 // database height
+	M uint64 // database width
 
 	// For in-memory db compression
 	Squishing uint64
@@ -102,7 +102,7 @@ func (db *Database[T]) GetElem(i uint64) uint64 {
 
 	var vals []uint64
 	for j := row * db.Info.Ne; j < (row+1)*db.Info.Ne; j++ {
-		vals = append(vals, db.Data.Get(j, col))
+		vals = append(vals, uint64(db.Data.Get(j, col)))
 	}
 
 	return db.Info.ReconstructElem(vals, i)
@@ -232,11 +232,18 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 	row := db.Info.L - 1
 	for i := Num; i < db.Info.L*db.Info.M; i++ {
 		col := i % db.Info.M
-		db.Data.Set(0, row, col)
+		db.Data.Set(row, col, 0)
+	}
+
+	for i := uint64(0); i < db.Info.L*db.Info.M; i++ {
+		col := i % db.Info.M
+		if db.Data.Get(row, col) >= T(db.Info.P()) {
+      panic("bad")
+    }
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubUint64(db.Info.P() / 2)
+	db.Data.SubConst(T(db.Info.P()) / 2)
 
 	return db
 }
@@ -264,7 +271,7 @@ func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64,
 			cur += (elem * coeff)
 			coeff *= (1 << rowLength)
 			if ((i+1)%int(db.Info.Packing) == 0) || (i == len(vals)-1) {
-				db.Data.Set(cur, at/db.Info.M, at%db.Info.M)
+				db.Data.Set(at/db.Info.M, at%db.Info.M, T(cur))
 				at += 1
 				cur = 0
 				coeff = 1
@@ -274,13 +281,15 @@ func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64,
 		// Use multiple Z_p elems to represent each db elem
 		for i, elem := range vals {
 			for j := uint64(0); j < db.Info.Ne; j++ {
-				db.Data.Set(Base_p(db.Info.P(), elem, j), (uint64(i)/db.Info.M)*db.Info.Ne+j, uint64(i)%db.Info.M)
+				db.Data.Set((uint64(i)/db.Info.M)*db.Info.Ne+j,
+          uint64(i)%db.Info.M,
+          T(Base_p(db.Info.P(), elem, j)))
 			}
 		}
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubUint64(db.Info.P() / 2)
+	db.Data.SubConst(T(db.Info.P()) / 2)
 
 	return db
 }
