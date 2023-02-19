@@ -1,11 +1,15 @@
 package pir
 
-import "math"
-import "fmt"
+import (
+  "fmt"
+  "math"
+)
 
-import "github.com/henrycg/simplepir/lwe"
-import "github.com/henrycg/simplepir/rand"
-import "github.com/henrycg/simplepir/matrix"
+import (
+  "github.com/henrycg/simplepir/lwe"
+  "github.com/henrycg/simplepir/rand"
+  "github.com/henrycg/simplepir/matrix"
+)
 
 type DBInfo struct {
 	Num       uint64 // number of db entries.
@@ -57,6 +61,7 @@ func (db *Database[T]) Squish() {
 // Store the database with entries decomposed into Z_p elements, and mapped to [-p/2, p/2]
 // Z_p elements that encode the same database entry are stacked vertically below each other.
 func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
+  //fmt.Printf("vals: %v\n", vals)
   q := uint64(0)
   shortQ := (Info.Params.Logq != 64)
   if shortQ {

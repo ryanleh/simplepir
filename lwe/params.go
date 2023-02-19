@@ -28,6 +28,7 @@ var plaintextModulus32 = map[uint64]uint64{
 }
 
 /* Maps #samples ==> plaintext modulus */
+/*
 var plaintextModulus64 = map[uint64]uint64{
 	1 << 13: 574457,
 	1 << 14: 483058,
@@ -40,6 +41,20 @@ var plaintextModulus64 = map[uint64]uint64{
 	1 << 21: 143614,
 	1 << 22: 120764,
 	1 << 23: 101550,
+}
+*/
+var plaintextModulus64 = map[uint64]uint64{
+	1 << 13: 1000,
+	1 << 14: 1000,
+	1 << 15: 1000,
+	1 << 16: 1000,
+	1 << 17: 1000,
+	1 << 18: 1000,
+	1 << 19: 1000,
+	1 << 20: 1000,
+	1 << 21: 1000,
+	1 << 22: 1000,
+	1 << 23: 1000,
 }
 
 type Params struct {

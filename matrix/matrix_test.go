@@ -41,7 +41,7 @@ func TestGob(t *testing.T) {
 func testAdd[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64) {
   rand := rand.NewRandomBufPRG()
 
-  m := Rand[U](rand, r1, c1)
+  m := Rand[U](rand, r1, c1, 0)
   z := Zeros[U](r1, c1)
 
   if !z.Equals(z) {
@@ -65,8 +65,8 @@ func TestAdd64(t *testing.T) {
 func testMul[U Elem](t *testing.T, logq uint64, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   rand := rand.NewRandomBufPRG()
 
-  m1 := Rand[U](rand, r1, c1)
-  m2 := Rand[U](rand, r2, c2)
+  m1 := Rand[U](rand, r1, c1, 12309)
+  m2 := Rand[U](rand, r2, c2, 9123)
   z := Zeros[U](r2, c2)
   zout := Zeros[U](r1, c2)
 

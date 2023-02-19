@@ -37,7 +37,7 @@ func TestGood64(t *testing.T) {
 		t.Fail()
 	}
 
-	if p.P != uint64(574457) || p.Logq != 64 || p.M !=
+	if p.P != uint64(1000) || p.Logq != 64 || p.M !=
 		1<<13 || p.Sigma != float64(81920.0) || p.N !=
 		uint64(1408) {
 		t.Fail()

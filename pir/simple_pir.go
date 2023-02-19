@@ -1,7 +1,11 @@
 package pir
 
-import "bytes"
-import "encoding/gob"
+import (
+  "bytes"
+  "encoding/gob"
+//  "fmt"
+)
+
 import "github.com/henrycg/simplepir/lwe"
 import "github.com/henrycg/simplepir/rand"
 import "github.com/henrycg/simplepir/matrix"

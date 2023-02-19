@@ -33,7 +33,7 @@ func TestDBMediumEntries32(t *testing.T) {
 
 func TestDBMediumEntries64(t *testing.T) {
   db := testDBMediumEntries[matrix.Elem64](t)
-  if db.Info.Packing != 2 || db.Info.Ne != 1 {
+  if db.Info.Packing != 1 || db.Info.Ne != 1 {
     t.Fail()
   }
 }

@@ -69,8 +69,8 @@ func runPIR[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	val := client.Recover(secret, answer)
 
 	if db.GetElem(i) != val {
-		fmt.Printf("(querying index %d -- row should be >= %d): Got %d instead of %d\n",
-			i, db.Data.Rows()/4, val, db.GetElem(i))
+		fmt.Printf("(querying index %d): Got %d instead of %d\n",
+			i, val, db.GetElem(i))
 		t.Fatal()
 	}
 }
