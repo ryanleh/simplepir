@@ -152,7 +152,7 @@ func TestSimplePir32(t *testing.T) {
 }
 
 func TestSimplePirSmall64(t *testing.T) {
-	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(8), 34)
+	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(3), 34)
 }
 
 
@@ -170,11 +170,11 @@ func TestSimplePirMany64(t *testing.T) {
 
 
 func TestSimplePirCompressed32(t *testing.T) {
-	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
+	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<20), uint64(4), 262144)
 }
 
 func TestSimplePirCompressed64(t *testing.T) {
-	testSimplePirCompressed[matrix.Elem64](t, uint64(1<<20), uint64(8), 262144)
+	testSimplePirCompressed[matrix.Elem64](t, uint64(1<<20), uint64(4), 262144)
 }
 
 func TestSimplePirCompressedMany32(t *testing.T) {

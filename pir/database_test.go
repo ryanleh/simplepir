@@ -11,7 +11,7 @@ func testDBInit[T matrix.Elem](t *testing.T, N uint64, d uint64, vals []uint64) 
 
 	for i := uint64(0); i < N; i++ {
 		if db.GetElem(i) != (i + 1) {
-			t.Fatal("Reconstruct failed!")
+			t.Fatalf("Reconstruct failed! %v != %v", db.GetElem(i), i+1)
 		}
 	}
 
@@ -33,7 +33,7 @@ func TestDBMediumEntries32(t *testing.T) {
 
 func TestDBMediumEntries64(t *testing.T) {
   db := testDBMediumEntries[matrix.Elem64](t)
-  if db.Info.Packing != 1 || db.Info.Ne != 1 {
+  if db.Info.Packing != 2 || db.Info.Ne != 1 {
     t.Fail()
   }
 }

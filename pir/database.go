@@ -75,7 +75,7 @@ func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
 	val := Reconstruct_from_base_p(Info.P(), vals)
 
 	if Info.Packing > 0 {
-		val = Base_p((1 << Info.RowLength), val, Info.Packing - (index%Info.Packing) - 1)
+		val = Base_p((1 << Info.RowLength), val, index%Info.Packing)
 	}
   //log.Printf("value: %v; p=%v", val, Info.P())
 
@@ -112,6 +112,7 @@ func numEntries(N, row_length, p uint64) (uint64, uint64, uint64) {
     logp := uint64(math.Log2(float64(p)))
 		// pack multiple DB entries into a single Z_p elem
 		entries_per_elem := logp / row_length
+    //log.Printf("E per E %v", entries_per_elem)
 		db_entries := uint64(math.Ceil(float64(N) / float64(entries_per_elem)))
 		if db_entries == 0 || db_entries > N {
 			//fmt.Printf("Num entries is %d; N is %d\n", db_entries, N)
