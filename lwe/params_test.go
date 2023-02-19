@@ -26,7 +26,7 @@ func TestGood(t *testing.T) {
 
 func TestDelta(t *testing.T) {
 	p := NewParams(32, 10)
-	if p.Delta() != 4333973 {
+	if p.Delta != 4333973 {
 		t.Fail()
 	}
 }

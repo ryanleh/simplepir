@@ -1,7 +1,10 @@
 package lwe
 
-import "math"
-import "fmt"
+import (
+  "math"
+  "math/big"
+  "fmt"
+)
 
 // For 32-bit ciphertext modulus
 const secretDimension32 = uint64(1024)
@@ -46,15 +49,13 @@ type Params struct {
 
 	Logq uint64 // (logarithm of) ciphertext modulus
 	P    uint64 // plaintext modulus
+
+  Delta uint64 // Plaintext multiplier
 }
 
-func (p *Params) Delta() uint64 {
-	return (1 << p.Logq) / (p.P)
-}
 
 func (p *Params) Round(x uint64) uint64 {
-	Delta := p.Delta()
-	v := (x + Delta/2) / Delta
+	v := (x + p.Delta/2) / p.Delta
 	return v % p.P
 }
 
@@ -96,6 +97,12 @@ func NewParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
 		M:    nSamples,
 		P:    pMod,
 	}
+
+  b := big.NewInt(int64(1))
+  pInt := big.NewInt(int64(pMod))
+  b.Lsh(b, uint(logq))
+  b.Div(b, pInt)
+  p.Delta = uint64(b.Int64())
 
 	if logq == 32 {
 		p.N = secretDimension32
