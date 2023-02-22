@@ -3,7 +3,7 @@ package pir
 import (
 	"bytes"
 	"encoding/gob"
-	//"fmt"
+	"fmt"
 	//"log"
 	"testing"
 
@@ -12,6 +12,72 @@ import (
 )
 
 const SEC_PARAM = uint64(1 << 10)
+
+func TestGobQuery(t *testing.T) {
+	m := matrix.New[matrix.Elem32](5, 5)
+	m.Set(1, 0, 0)
+	m.Set(2, 0, 1)
+	m.Set(3, 0, 2)
+
+	q := Query[matrix.Elem32]{
+		query: m,
+	}
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(&q)
+	if err != nil {
+		fmt.Println(err)
+		panic("Encoding failed")
+	}
+
+	dec := gob.NewDecoder(&buf)
+	var q2 Query[matrix.Elem32]
+	err = dec.Decode(&q2)
+	if err != nil {
+		fmt.Println(err)
+		panic("Decoding failed")
+	}
+
+	if !q.query.Equals(q2.query) {
+		q.query.Print()
+		q2.query.Print()
+		panic("Objects are not equal")
+	}
+}
+
+func TestGobAnswer(t *testing.T) {
+	m := matrix.New[matrix.Elem32](5, 5)
+	m.Set(1, 0, 0)
+	m.Set(2, 0, 1)
+	m.Set(3, 0, 2)
+
+	a := Answer[matrix.Elem32]{
+		answer: m,
+	}
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(&a)
+	if err != nil {
+		fmt.Println(err)
+		panic("Encoding failed")
+	}
+
+	dec := gob.NewDecoder(&buf)
+	var a2 Answer[matrix.Elem32]
+	err = dec.Decode(&a2)
+	if err != nil {
+		fmt.Println(err)
+		panic("Decoding failed")
+	}
+
+	if !a.answer.Equals(a2.answer) {
+		a.answer.Print()
+		a2.answer.Print()
+		panic("Objects are not equal")
+	}
+}
 
 func testServerEncode[T matrix.Elem](t *testing.T, N, d uint64) {
 	prg := rand.NewRandomBufPRG()

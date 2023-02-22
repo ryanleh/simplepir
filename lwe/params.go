@@ -98,11 +98,11 @@ func NewParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
 		P:    pMod,
 	}
 
-  b := big.NewInt(int64(1))
-  pInt := big.NewInt(int64(pMod))
-  b.Lsh(b, uint(logq))
-  b.Div(b, pInt)
-  p.Delta = uint64(b.Int64())
+	b := big.NewInt(int64(1))
+	pInt := big.NewInt(int64(pMod))
+	b.Lsh(b, uint(logq))
+	b.Div(b, pInt)
+	p.Delta = uint64(b.Int64())
 
 	if logq == 32 {
 		p.N = secretDimension32
