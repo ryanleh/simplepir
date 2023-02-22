@@ -163,12 +163,16 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 		Num:       num,
 		RowLength: rowLength,
 		Params:    params,
+		M:         params.M,
 	}
 
 	// Compute database Info based on real LWE parameters
-	var entriesPerElem uint64
 	dbElems, elemsPerEntry, entriesPerElem := numEntries(num, rowLength, Info.Params.P)
-	Info.L, Info.M = approxSquareDatabaseDims(dbElems, elemsPerEntry, rowLength, Info.Params.P)
+
+	Info.L = uint64(math.Ceil(float64(dbElems) / float64(Info.M)))
+	if Info.L % elemsPerEntry != 0 {
+		Info.L += elemsPerEntry - (Info.L % elemsPerEntry)
+	}
 
 	Info.Ne = elemsPerEntry
 	Info.X = Info.Ne

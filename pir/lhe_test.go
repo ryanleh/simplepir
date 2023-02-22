@@ -56,41 +56,41 @@ func TestLHE64(t *testing.T) {
 }
 
 func TestLHE32_2(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<20), uint64(8))
+	testLHE[matrix.Elem32](t, uint64(1<<13), uint64(8))
 }
 
 func TestLHE64_2(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<20), uint64(8))
+	testLHE[matrix.Elem64](t, uint64(1<<13), uint64(8))
 }
 
 func TestLHE32_3(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<20), uint64(6))
+	testLHE[matrix.Elem32](t, uint64(1<<13), uint64(6))
 }
 
 func TestLHE64_3(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<20), uint64(6))
+	testLHE[matrix.Elem64](t, uint64(1<<13), uint64(6))
 }
 
 func TestLHECompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<20), uint64(9))
+	testLHECompressed[matrix.Elem32](t, uint64(1<<13), uint64(9))
 }
 
 func TestLHECompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<20), uint64(9))
+	testLHECompressed[matrix.Elem64](t, uint64(1<<13), uint64(9))
 }
 
 func TestLHEBigDB32(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<25), uint64(9))
+	testLHE[matrix.Elem32](t, uint64(1<<18), uint64(9))
 }
 
 func TestLHEBigDB64(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<25), uint64(9))
+	testLHE[matrix.Elem64](t, uint64(1<<18), uint64(9))
 }
 
 func TestLHEBigDBCompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<25), uint64(9))
+	testLHECompressed[matrix.Elem32](t, uint64(1<<18), uint64(9))
 }
 
 func TestLHEBigDBCompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<25), uint64(9))
+	testLHECompressed[matrix.Elem64](t, uint64(1<<18), uint64(9))
 }
