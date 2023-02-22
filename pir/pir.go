@@ -31,7 +31,7 @@ type Client[T matrix.Elem] struct {
 }
 
 type Query[T matrix.Elem] struct {
-  query *matrix.Matrix[T]
+	query *matrix.Matrix[T]
 }
 
 type Secret[T matrix.Elem] struct {
@@ -41,7 +41,29 @@ type Secret[T matrix.Elem] struct {
 }
 
 type Answer[T matrix.Elem] struct {
-  answer *matrix.Matrix[T]
+	answer *matrix.Matrix[T]
+}
+
+func (q *Query[T]) Dim() (uint64, uint64) {
+	return q.query.Rows(), q.query.Cols()
+}
+
+func (a *Answer[T]) Dim() (uint64, uint64) {
+	return a.answer.Rows(), a.answer.Cols()
+}
+
+func (q *Query[T]) SelectRows(start, num uint64) *Query[T] {
+	res := new(Query[T])
+	res.query = q.query.RowsDeepCopy(start, num)
+	return res
+}
+
+func (q *Query[T]) AppendZeros(num uint64) {
+	q.query.AppendZeros(num)
+}
+
+func (a1 *Answer[T]) Add(a2 *Answer[T]) {
+	a1.answer.Add(a2.answer)
 }
 
 func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
@@ -85,6 +107,10 @@ func (s *Server[T]) MatrixA() *matrix.Matrix[T] {
 
 func (s *Server[T]) Params() *lwe.Params {
 	return s.params
+}
+
+func (s *Server[T]) DBInfo() *DBInfo {
+	return s.db.Info
 }
 
 func (s *Server[T]) Get(i uint64) uint64 {

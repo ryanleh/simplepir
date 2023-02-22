@@ -162,7 +162,7 @@ func (m *Matrix[T]) GetRow(offset, num_rows uint64) *Matrix[T] {
 	return m2
 }
 
-func (m *Matrix[T]) rowsDeepCopy(offset, num_rows uint64) *Matrix[T] {
+func (m *Matrix[T]) RowsDeepCopy(offset, num_rows uint64) *Matrix[T] {
 	if offset+num_rows > m.rows {
 		panic("Requesting too many rows")
 	}
