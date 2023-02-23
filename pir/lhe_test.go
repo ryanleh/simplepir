@@ -2,6 +2,7 @@ package pir
 
 import (
 	"testing"
+	"fmt"
 
 	"github.com/henrycg/simplepir/matrix"
 	"github.com/henrycg/simplepir/lwe"
@@ -13,12 +14,29 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	answer := server.Answer(query)
 
 	vals := client.RecoverManyLHE(secret, answer)
-  shouldBe := matrix.Mul(db.Data, arr)
-  shouldBe.ModConst(T(db.Info.P()))
+  
+	shouldBe := matrix.Mul(db.Data, arr)
+	shouldBe.ModConst(T(db.Info.P()))
 
-  if !shouldBe.Equals(vals) {
-    t.Fail()
-  }
+	at := uint64(0)
+	for i := uint64(0); i < uint64(vals.Rows()); i++ {
+		should_be := uint64(0)
+		for j := uint64(0); (j < uint64(arr.Rows())) && (at < db.Info.Num); j++ {
+			should_be += uint64(arr.Get(j, 0)) * db.GetElem(at)
+			at += 1
+		}
+		should_be %= db.Info.P()
+
+		if should_be != uint64(vals.Get(i, 0)) {
+			fmt.Printf("Row %d: Got %d instead of %d (mod %d) -- %d\n",
+			            i, uint64(vals.Get(i, 0)), should_be, db.Info.P(), shouldBe.Get(i, 0))
+			t.Fail()
+		}
+	}
+
+	if !shouldBe.Equals(vals) {
+		t.Fail()
+	}
 }
 
 func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
