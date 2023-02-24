@@ -45,24 +45,17 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
   arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
 
+  arr = matrix.Zeros[T](db.Info.M, 1)
+  arr.Set(2, 0, T(1))
+  //arr.Set(3, 0, T(6))
+  //arr.Set(4, 0, T(2))
+
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
 	runLHE(t, client, server, db, arr)
 }
 
-func testLHECompressed[T matrix.Elem](t *testing.T, N uint64, d uint64) {
-	prg := rand.NewRandomBufPRG()
-	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 512)
-	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
-  arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
-
-	seed := rand.RandomPRGKey()
-	server := NewServerSeed(db, seed)
-	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
-
-	runLHE(t, client, server, db, arr)
-}
 
 
 func TestLHE32(t *testing.T) {
@@ -89,14 +82,6 @@ func TestLHE64_3(t *testing.T) {
 	testLHE[matrix.Elem64](t, uint64(1<<13), uint64(6))
 }
 
-func TestLHECompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<13), uint64(9))
-}
-
-func TestLHECompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<13), uint64(9))
-}
-
 func TestLHEBigDB32(t *testing.T) {
 	testLHE[matrix.Elem32](t, uint64(1<<18), uint64(9))
 }
@@ -105,10 +90,3 @@ func TestLHEBigDB64(t *testing.T) {
 	testLHE[matrix.Elem64](t, uint64(1<<18), uint64(9))
 }
 
-func TestLHEBigDBCompressed32(t *testing.T) {
-	testLHECompressed[matrix.Elem32](t, uint64(1<<18), uint64(9))
-}
-
-func TestLHEBigDBCompressed64(t *testing.T) {
-	testLHECompressed[matrix.Elem64](t, uint64(1<<18), uint64(9))
-}

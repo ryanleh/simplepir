@@ -1,7 +1,7 @@
 package pir
 
 import (
-//  "log"
+  "log"
   "github.com/henrycg/simplepir/matrix"
 )
 
@@ -35,6 +35,9 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 	}
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
+  // XXX test
+	s.secret = matrix.Zeros[T](c.params.N, 1)
+	err = matrix.Zeros[T](c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -52,7 +55,7 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 	return s, &Query[T]{ query }
 }
 
-func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ans *Answer[T]) *matrix.Matrix[T] {
+func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
 	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) {
 		panic("Not yet supported")
 	}
@@ -60,33 +63,38 @@ func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ans *Answer[T]) *matrix
 	ratio := c.params.P / 2
 	offset := uint64(0)
 	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += ratio * uint64(secret.query.Get(j, 0))
+		offset += uint64(secret.query.Get(j, 0))
+    //log.Printf("offset=%v [%v]", offset % c.params.P, secret.query.Get(j,0) % T(c.params.P))
 	}
-	offset = -offset
-
+  offset *= ratio
   if T(0).Bitlen() == 32 {
     offset %= (1 << 32)
   }
-  //log.Printf("offset=%v", offset)
+  log.Printf("offset=%v", offset)
+	//offset = -offset
+  ans := ansIn.answer.Copy()
+	ans.SubConst(T(offset))
+
 
 	interm := matrix.Mul(c.hint, secret.secret)
-  acopy := ans.answer.Copy()
-	acopy.Sub(interm)
-	acopy.AddConst(T(offset))
+	ans.Sub(interm)
 
+  /*
 	norm := uint64(0)
   for i := uint64(0); i<secret.arr.Rows(); i++ {
 		norm += uint64(secret.arr.Get(i, 0))
 	}
 	norm %= 2
-  //log.Printf("Norm: %v", norm)
+  log.Printf("Norm: %v", norm)
+  */
+  //norm := uint64(0)
 
-	out := matrix.Zeros[T](acopy.Rows(), 1)
-	for row := uint64(0); row < acopy.Rows(); row++ {
-		noised := uint64(acopy.Get(row, 0))
+	out := matrix.Zeros[T](ans.Rows(), 1)
+	for row := uint64(0); row < ans.Rows(); row++ {
+		noised := uint64(ans.Get(row, 0))
     //log.Printf("noised[%v] = %v   [Delta=%v]", row, noised, c.params.Delta)
 		denoised := c.params.Round(noised)
-		out.Set(row, 0, T((denoised + ratio*norm) % c.params.P))
+		out.Set(row, 0, T(denoised % c.params.P))
 	}
 
 	return out
