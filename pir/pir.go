@@ -88,10 +88,6 @@ func setupServer[T matrix.Elem](db *Database[T], matrixA *matrix.Matrix[T]) *Ser
 		hint:    matrix.Mul(db.Data, matrixA),
 	}
 
-	// map the database entries to [0, p] (rather than [-p/2, p/2]) and then
-	// pack the database more tightly in memory, because the online computation
-	// is memory-bandwidth-bound
-	s.db.Data.AddConst(T(s.params.P / 2))
 	s.db.Squish()
 
 	return s
@@ -207,17 +203,6 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
     panic("Not supported")
   }
 
-	ratio := c.params.P / 2
-	offset := uint64(0)
-	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += ratio * uint64(secret.query.Get(j, 0))
-	}
-
-  offset = -offset
-  if T(0).Bitlen() == 32 {
-    offset %= (1<<32)
-  }
-
 	row := secret.index / c.dbinfo.M
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
@@ -225,7 +210,7 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := uint64(ans.answer.Get(j, 0)) + offset
+		noised := uint64(ans.answer.Get(j, 0))
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//log.Printf("Reconstructing row %d: %d\n", j, denoised)
@@ -240,16 +225,6 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
     panic("Not supported")
   }
 
-	ratio := c.params.P / 2
-	offset := uint64(0)
-	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += ratio * uint64(secret.query.Get(j, 0))
-	}
-	offset = -offset 
-  if T(0).Bitlen() == 32 {
-    offset %= (1<<32)
-  }
-
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
 
@@ -259,7 +234,7 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
 		for j := uint64(0); j < c.dbinfo.Ne; j++ {
-			noised := uint64(ans.answer.Get(row + j, 0)) + offset
+			noised := uint64(ans.answer.Get(row + j, 0))
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
 		}

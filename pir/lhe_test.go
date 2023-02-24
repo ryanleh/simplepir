@@ -35,6 +35,8 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	}
 
 	if !shouldBe.Equals(vals) {
+    fmt.Printf("should be: %v \n", shouldBe)
+    fmt.Printf("got : %v\n", vals)
 		t.Fail()
 	}
 }
@@ -46,8 +48,8 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
   arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
 
   arr = matrix.Zeros[T](db.Info.M, 1)
-  arr.Set(2, 0, T(1))
-  //arr.Set(3, 0, T(6))
+  arr.Set(0, 0, T(1))
+  //arr.Set(1, 0, T(6))
   //arr.Set(4, 0, T(2))
 
 	server := NewServer(db)

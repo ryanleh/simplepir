@@ -1,7 +1,7 @@
 package pir
 
 import (
-  "log"
+//  "log"
   "github.com/henrycg/simplepir/matrix"
 )
 
@@ -35,9 +35,6 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 	}
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-  // XXX test
-	s.secret = matrix.Zeros[T](c.params.N, 1)
-	err = matrix.Zeros[T](c.dbinfo.M, 1)
 
 	query := matrix.Mul(c.matrixA, s.secret)
 	query.Add(err)
@@ -59,35 +56,12 @@ func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matr
 	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) {
 		panic("Not yet supported")
 	}
-
-	ratio := c.params.P / 2
-	offset := uint64(0)
-	for j := uint64(0); j < c.dbinfo.M; j++ {
-		offset += uint64(secret.query.Get(j, 0))
-    //log.Printf("offset=%v [%v]", offset % c.params.P, secret.query.Get(j,0) % T(c.params.P))
-	}
-  offset *= ratio
-  if T(0).Bitlen() == 32 {
-    offset %= (1 << 32)
-  }
-  log.Printf("offset=%v", offset)
-	//offset = -offset
+  
   ans := ansIn.answer.Copy()
-	ans.SubConst(T(offset))
 
 
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.Sub(interm)
-
-  /*
-	norm := uint64(0)
-  for i := uint64(0); i<secret.arr.Rows(); i++ {
-		norm += uint64(secret.arr.Get(i, 0))
-	}
-	norm %= 2
-  log.Printf("Norm: %v", norm)
-  */
-  //norm := uint64(0)
 
 	out := matrix.Zeros[T](ans.Rows(), 1)
 	for row := uint64(0); row < ans.Rows(); row++ {

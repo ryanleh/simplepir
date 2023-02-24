@@ -65,7 +65,7 @@ func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
   shortQ := (Info.Params.Logq != 64)
 
 	for i, _ := range vals {
-		vals[i] = (vals[i] + Info.P()/2) 
+		vals[i] = (vals[i])
     if shortQ {
       vals[i] %= (1 << 32)
     }
@@ -232,7 +232,6 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
   if float64(rowLength) < math.Log2(float64(db.Info.P())) {
     maxSize = (1 << rowLength)
   }
-  //log.Printf("max size %v", maxSize)
 	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, maxSize)
 
 	// clear overflow cols
@@ -248,9 +247,6 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
       panic("bad")
     }
 	}
-
-	// Map db elems to [-p/2; p/2]
-  db.Data.SubConst(T(db.Info.P() / 2))
 
 	return db
 }
@@ -296,7 +292,7 @@ func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64,
 	}
 
 	// Map db elems to [-p/2; p/2]
-	db.Data.SubConst(T(db.Info.P()) / 2)
+	//db.Data.SubConst(T(db.Info.P()) / 2)
 
 	return db
 }
