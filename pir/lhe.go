@@ -18,7 +18,7 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 		panic("Parameter mismatch")
 	}
 
-	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
+	if (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
 		panic("Not yet supported.")
 	}
 
@@ -53,7 +53,7 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 }
 
 func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
-	if (c.dbinfo.Packing != 1) || (c.dbinfo.Ne != 1) {
+	if (c.dbinfo.Ne != 1) {
 		panic("Not yet supported")
 	}
   

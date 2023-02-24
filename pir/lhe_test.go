@@ -47,11 +47,6 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
   arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
 
-  arr = matrix.Zeros[T](db.Info.M, 1)
-  arr.Set(0, 0, T(1))
-  //arr.Set(1, 0, T(6))
-  //arr.Set(4, 0, T(2))
-
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 

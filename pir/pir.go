@@ -199,10 +199,6 @@ func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
 }
 
 func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
-  if c.dbinfo.Packing > 1 {
-    panic("Not supported")
-  }
-
 	row := secret.index / c.dbinfo.M
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
@@ -221,10 +217,6 @@ func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 }
 
 func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
-  if c.dbinfo.Packing > 1 {
-    panic("Not supported")
-  }
-
 	interm := matrix.Mul(c.hint, secret.secret)
 	ans.answer.Sub(interm)
 
@@ -239,9 +231,7 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ans *Answer[T]) []uint64 {
 			vals = append(vals, denoised)
 		}
 
-		for j := uint64(0); j < c.dbinfo.Packing; j++ {
-		  out[row] = c.dbinfo.ReconstructElem(vals, j)
-    }
+    out[row] = c.dbinfo.ReconstructElem(vals, 0)
 		//log.Printf("Reconstructing row %d: %d\n", row, out[row])
 	}
 	ans.answer.Add(interm)
