@@ -1,8 +1,6 @@
 package pir
 
 import (
-  "bytes"
-  "encoding/gob"
   //"log"
 )
 
@@ -115,50 +113,6 @@ func (s *Server[T]) DBInfo() *DBInfo {
 
 func (s *Server[T]) Get(i uint64) uint64 {
 	return s.db.GetElem(i)
-}
-
-func (s *Server[T]) GobEncode() ([]byte, error) {
-	buf := new(bytes.Buffer)
-	enc := gob.NewEncoder(buf)
-	err := enc.Encode(s.params)
-	if err != nil {
-		return buf.Bytes(), err
-	}
-
-	err = enc.Encode(s.matrixA) // TODO: Improve by storing just a see
-	if err != nil {
-		return buf.Bytes(), err
-	}
-
-	err = enc.Encode(s.db)
-	if err != nil {
-		return buf.Bytes(), err
-	}
-
-	err = enc.Encode(s.hint)
-	return buf.Bytes(), err
-}
-
-func (s *Server[T]) GobDecode(buf []byte) error {
-	b := bytes.NewBuffer(buf)
-	dec := gob.NewDecoder(b)
-	err := dec.Decode(&s.params)
-	if err != nil {
-		return err
-	}
-
-	err = dec.Decode(&s.matrixA)
-	if err != nil {
-		return err
-	}
-
-	err = dec.Decode(&s.db)
-	if err != nil {
-		return err
-	}
-
-	err = dec.Decode(&s.hint)
-	return err
 }
 
 func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T], dbinfo *DBInfo) *Client[T] {

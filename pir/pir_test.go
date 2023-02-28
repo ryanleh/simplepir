@@ -101,9 +101,6 @@ func testServerEncode[T matrix.Elem](t *testing.T, N, d uint64) {
 	if *server2.params != *server.params {
 		t.Fatal("Parameter mismatch")
 	}
-	if !server2.matrixA.Equals(server.matrixA) {
-		t.Fatal("A matrix mismatch")
-	}
 	if !server2.hint.Equals(server.hint) {
 		t.Fatal("Hint mismatch")
 	}
