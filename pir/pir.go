@@ -66,6 +66,10 @@ func (a1 *Answer[T]) Add(a2 *Answer[T]) {
 	a1.answer.Add(a2.answer)
 }
 
+func (a1 *Answer[T]) AddWithMismatch(a2 *Answer[T]) {
+	a1.answer.AddWithMismatch(a2.answer)
+}
+
 func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
 	prg := rand.NewRandomBufPRG()
 	params := db.Info.Params
