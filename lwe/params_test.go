@@ -24,6 +24,19 @@ func TestGood(t *testing.T) {
 	}
 }
 
+func TestGoodPicked(t *testing.T) {
+	p := NewParamsFixedP(32, 10, 900)
+	if p == nil {
+		t.Fail()
+	}
+
+	if p.P != uint64(900) || p.Logq != 32 || p.M !=
+		10 || p.Sigma != float64(6.4) || p.N !=
+		uint64(1024) {
+		t.Fail()
+	}
+}
+
 func TestDelta(t *testing.T) {
 	p := NewParams(32, 10)
 	if p.Delta != 4333973 {
@@ -37,7 +50,7 @@ func TestGood64(t *testing.T) {
 		t.Fail()
 	}
 
-	if p.P != uint64(1000) || p.Logq != 64 || p.M !=
+	if p.P != uint64(574457) || p.Logq != 64 || p.M !=
 		1<<13 || p.Sigma != float64(81920.0) || p.N !=
 		uint64(1408) {
 		t.Fail()

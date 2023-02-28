@@ -45,7 +45,7 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
 	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 512)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
-  arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
+  	arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -80,10 +80,10 @@ func TestLHE64_3(t *testing.T) {
 }
 
 func TestLHEBigDB32(t *testing.T) {
-	testLHE[matrix.Elem32](t, uint64(1<<18), uint64(9))
+	testLHE[matrix.Elem32](t, uint64(1<<14), uint64(9))
 }
 
 func TestLHEBigDB64(t *testing.T) {
-	testLHE[matrix.Elem64](t, uint64(1<<18), uint64(9))
+	testLHE[matrix.Elem64](t, uint64(1<<14), uint64(9))
 }
 

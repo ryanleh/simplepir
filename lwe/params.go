@@ -50,7 +50,7 @@ type Params struct {
 	Logq uint64 // (logarithm of) ciphertext modulus
 	P    uint64 // plaintext modulus
 
-  Delta uint64 // Plaintext multiplier
+	Delta uint64 // Plaintext multiplier
 }
 
 
@@ -77,7 +77,7 @@ func NewParams(logq uint64, nSamples uint64) *Params {
 		options = plaintextModulus64
 	}
 	for mNew, pNew := range options {
-		if mNew < m && nSamples < mNew {
+		if mNew < m && nSamples <= mNew {
 			m = mNew
 			pmod = pNew
 		}
@@ -88,10 +88,33 @@ func NewParams(logq uint64, nSamples uint64) *Params {
 		return nil
 	}
 
-	return NewParamsFixedP(logq, m, pmod)
+	return newParamsFixedP(logq, m, pmod)
 }
 
 func NewParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
+	if CheckParams(logq, nSamples, pMod) {
+		return newParamsFixedP(logq, nSamples, pMod)
+	}
+
+	return nil
+}
+
+func CheckParams(logq uint64, nSamples uint64, pMod uint64) bool {
+	options := plaintextModulus32
+	if logq == 64 {
+		options = plaintextModulus64
+	}
+
+	for mNew, pNew := range options {
+		if nSamples <= mNew && pMod <= pNew {
+			return true
+		}
+	}
+
+	return false
+}
+
+func newParamsFixedP(logq uint64, nSamples uint64, pMod uint64) *Params {
 	p := &Params{
 		Logq: logq,
 		M:    nSamples,
