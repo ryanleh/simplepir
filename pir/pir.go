@@ -55,12 +55,12 @@ func (s *Secret[T]) Copy() *Secret[T] {
 func (c *Client[T]) Copy() *Client[T] {
 	out := new(Client[T])
 
-	*out.prg = *c.prg
-	*out.params = *c.params
-	*out.dbinfo = *c.dbinfo
+	out.prg = rand.NewRandomBufPRG()
+	out.params = c.params
+	out.dbinfo = c.dbinfo
 
 	out.hint = c.hint.Copy()
-	out.matrixA = c.matrixA
+	out.matrixA = c.matrixA.Copy()
 
 	return out
 }
