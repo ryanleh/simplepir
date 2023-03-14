@@ -42,6 +42,16 @@ type Answer[T matrix.Elem] struct {
 	answer *matrix.Matrix[T]
 }
 
+func (s *Secret[T]) Copy() *Secret[T] {
+	out := new(Secret[T])
+
+	out.query = s.query.Copy()
+	out.secret = s.secret.Copy()
+	out.index = s.index
+
+	return out
+}
+
 func (c *Client[T]) Copy() *Client[T] {
 	out := new(Client[T])
 
