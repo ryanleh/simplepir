@@ -42,6 +42,19 @@ type Answer[T matrix.Elem] struct {
 	answer *matrix.Matrix[T]
 }
 
+func (c *Client[T]) Copy() *Client[T] {
+	out := new(Client[T])
+
+	*out.prg = *c.prg
+	*out.params = *c.params
+	*out.dbinfo = *c.dbinfo
+
+	out.hint = c.hint.Copy()
+	out.matrixA = c.matrixA
+
+	return out
+}
+
 func (q *Query[T]) Dim() (uint64, uint64) {
 	return q.query.Rows(), q.query.Cols()
 }
