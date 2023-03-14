@@ -11,6 +11,16 @@ type SecretLHE[T matrix.Elem] struct {
 	arr    *matrix.Matrix[T]
 }
 
+func (s *SecretLHE[T]) Copy() *SecretLHE[T] {
+	out := new(SecretLHE[T])
+
+	out.query = s.query.Copy()
+	out.secret = s.secret.Copy()
+	out.arr = s.arr.Copy()
+
+	return out
+}
+
 func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T]) {
   arr := arrIn.Copy()
 
