@@ -10,7 +10,9 @@ import (
 )
 
 func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], arr *matrix.Matrix[T]) {
-	secret, query := client.QueryLHE(arr)
+	//secret, query := client.QueryLHE(arr)
+	secret := client.PreprocessQueryLHE()
+	query := client.QueryLHEPreprocessed(arr, secret)
 	answer := server.Answer(query)
 
 	vals := client.RecoverManyLHE(secret, answer)
@@ -35,8 +37,8 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	}
 
 	if !shouldBe.Equals(vals) {
-    fmt.Printf("should be: %v \n", shouldBe)
-    fmt.Printf("got : %v\n", vals)
+		fmt.Printf("should be: %v \n", shouldBe)
+		fmt.Printf("got : %v\n", vals)
 		t.Fail()
 	}
 }

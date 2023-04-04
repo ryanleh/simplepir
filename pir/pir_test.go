@@ -126,7 +126,10 @@ func TestServerEncode64(t *testing.T) {
 
 // Run full PIR scheme (offline + online phases).
 func runPIR[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], i uint64) {
-	secret, query := client.Query(i)
+	//secret, query := client.Query(i)
+	secret := client.PreprocessQuery()
+	query := client.QueryPreprocessed(i, secret)
+
 	answer := server.Answer(query)
 	val := client.Recover(secret, answer)
 
@@ -137,7 +140,10 @@ func runPIR[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 }
 
 func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], i uint64) {
-	secret, query := client.Query(i)
+	//secret, query := client.Query(i)
+	secret := client.PreprocessQuery()
+	query := client.QueryPreprocessed(i, secret)
+
 	answer := server.Answer(query)
 
 	vals := client.RecoverMany(secret, answer)

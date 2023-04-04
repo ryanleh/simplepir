@@ -150,6 +150,34 @@ func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T],
 	}
 }
 
+func (c *Client[T]) PreprocessQuery() *Secret[T] {
+	s := &Secret[T]{
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
+	}
+
+	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
+
+	query := matrix.Mul(c.matrixA, s.secret)
+	query.Add(err)
+
+	// Pad the query to match the dimensions of the compressed DB
+	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
+		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
+	}
+
+	s.query = query
+
+	return s
+}
+
+func (c *Client[T]) QueryPreprocessed(i uint64, s *Secret[T]) *Query[T] {
+	s.index = i
+
+	s.query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
+
+	return &Query[T]{ s.query.Copy() }
+}
+
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	s := &Secret[T]{
 		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
