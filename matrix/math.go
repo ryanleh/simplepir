@@ -90,20 +90,20 @@ func Mul[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	acols := C.size_t(a.cols)
 	bcols := C.size_t(b.cols)
 
-  outPtr := unsafe.Pointer(&out.data[0])
-  aPtr := unsafe.Pointer(&a.data[0])
-  bPtr := unsafe.Pointer(&b.data[0])
+	outPtr := unsafe.Pointer(&out.data[0])
+	aPtr := unsafe.Pointer(&a.data[0])
+	bPtr := unsafe.Pointer(&b.data[0])
 
-  switch T(0).Bitlen() {
-    case 32:
-      C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
-    case 64:
-      C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
-    default:
-      panic("Shouldn't get here")
-  }
+	switch T(0).Bitlen() {
+		case 32:
+			C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
+		case 64:
+			C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
+		default:
+			panic("Shouldn't get here")
+	}
 
-  return out
+	return out
 }
 
 
@@ -120,24 +120,24 @@ func MulVec[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	arows := C.size_t(a.rows)
 	acols := C.size_t(a.cols)
 
-  outPtr := unsafe.Pointer(&out.data[0])
-  aPtr := unsafe.Pointer(&a.data[0])
-  bPtr := unsafe.Pointer(&b.data[0])
+	outPtr := unsafe.Pointer(&out.data[0])
+	aPtr := unsafe.Pointer(&a.data[0])
+	bPtr := unsafe.Pointer(&b.data[0])
 
-  switch T(0).Bitlen() {
-    case 32:
-      C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-    case 64:
-      C.matMulVec64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-    default:
-      panic("Shouldn't get here")
-  }
+	switch T(0).Bitlen() {
+		case 32:
+			C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
+		case 64:
+			C.matMulVec64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
+		default:
+			panic("Shouldn't get here")
+	}
 
 	return out
 }
 
 func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
-	if a.cols*a.SquishRatio() != b.rows {
+	if a.cols * a.SquishRatio() != b.rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
 		fmt.Printf("Want %v == %v", a.cols*a.SquishRatio(), b.rows)
 		panic("Dimension mismatch")
@@ -150,18 +150,18 @@ func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	arows := C.size_t(a.rows)
 	acols := C.size_t(a.cols)
 
-  outPtr := unsafe.Pointer(&out.data[0])
-  aPtr := unsafe.Pointer(&a.data[0])
-  bPtr := unsafe.Pointer(&b.data[0])
+	outPtr := unsafe.Pointer(&out.data[0])
+	aPtr := unsafe.Pointer(&a.data[0])
+	bPtr := unsafe.Pointer(&b.data[0])
 
-  switch T(0).Bitlen() {
-    case 32:
-      C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-    case 64:
-      C.matMulVecPacked64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-    default:
-      panic("Shouldn't get here")
-  }
+	switch T(0).Bitlen() {
+		case 32:
+			C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
+		case 64:
+			C.matMulVecPacked64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
+		default:
+			panic("Shouldn't get here")
+	}
 
 	out.DropLastrows(8)
 
@@ -174,4 +174,3 @@ func (m *Matrix[T]) Round(round_to uint64, mod uint64) {
 		m.data[i] = T(v % mod)
 	}
 }
-

@@ -17,8 +17,8 @@ const squishRatio64 = C.COMPRESSION_64
 // group of 'delta' consecutive values as a single database Element,
 // where each value uses 'basis' bits.
 func (m *Matrix[T]) Squish() {
-  basis := m.SquishBasis()
-  delta := m.SquishRatio()
+	basis := m.SquishBasis()
+	delta := m.SquishRatio()
 
 	n := Zeros[T](m.rows, (m.cols+delta-1)/delta)
 
@@ -27,9 +27,9 @@ func (m *Matrix[T]) Squish() {
 			for k := uint64(0); k < delta; k++ {
 				if delta*j+k < m.cols {
 					val := m.Get(i, delta*j+k)
-          if val >= (1 << m.SquishBasis()) {
-            log.Fatalf("Database entry %v too large to squish", val)
-          }
+          				if val >= (1 << m.SquishBasis()) {
+            					log.Fatalf("Database entry %v too large to squish", val)
+          				}
 					n.data[i*n.cols+j] += (val << (k * basis))
 				}
 			}

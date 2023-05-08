@@ -34,11 +34,11 @@ type Matrix[T Elem] struct {
 }
 
 func (Elem32) Bitlen() uint64 {
-  return 32
+	return 32
 }
 
 func (Elem64) Bitlen() uint64 {
-  return 64
+	return 64
 }
 
 func (m *Matrix[T]) Copy() *Matrix[T] {
@@ -79,11 +79,11 @@ func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
 // If mod is 0, then generate uniform random int of type T
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-  m := big.NewInt(int64(mod))
-  if mod == 0 {
-    m.SetInt64(1)
-    m.Lsh(m, uint(T(0).Bitlen()))
-  }
+	m := big.NewInt(int64(mod))
+	if mod == 0 {
+		m.SetInt64(1)
+		m.Lsh(m, uint(T(0).Bitlen()))
+	}
 	for i := 0; i < len(out.data); i++ {
 		v, err := rand.Int(src, m)
 		if err != nil {
@@ -190,11 +190,11 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 		return false
 	}
 
-  for i := 0; i < len(m.data); i++ {
-    if m.data[i] != n.data[i] {
-      return false
-    }
-  }
+	for i := 0; i < len(m.data); i++ {
+		if m.data[i] != n.data[i] {
+			return false
+		}
+	}
 
 	return true
 }
@@ -202,15 +202,15 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 
 func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-  samplef := lwe.GaussSample32
-  switch T(0).Bitlen() {
-    case 32:
-      // Do nothing
-    case 64:
-      samplef = lwe.GaussSample64
-    default:
-      panic("Shouldn't get here")
-  }
+	samplef := lwe.GaussSample32
+	switch T(0).Bitlen() {
+		case 32:
+			// Do nothing
+		case 64:
+			samplef = lwe.GaussSample64
+		default:
+			panic("Shouldn't get here")
+	}
 
 	for i := 0; i < len(out.data); i++ {
 		out.data[i] = T(samplef(src))
