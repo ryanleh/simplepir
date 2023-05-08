@@ -64,7 +64,10 @@ func (m *Matrix[T]) WriteToFile(fn string) error {
 	}
 	defer f.Close()
 
-	_, err = fmt.Fprintf(f, "%d,%d\n", m.rows, m.cols)
+	return m.WriteToFileDescriptor(f)
+}
+func (m *Matrix[T]) WriteToFileDescriptor(f *os.File) error {
+	_, err := fmt.Fprintf(f, "%d,%d\n", m.rows, m.cols)
 	if err != nil {
 		return err
 	}
@@ -90,7 +93,11 @@ func (m *Matrix[T]) ReadFromFile(fn string) error {
 	}
 	defer f.Close()
 
-	_, err = fmt.Fscanf(f, "%d,%d\n", &m.rows, &m.cols)
+	return m.ReadFromFileDescriptor(f)
+}
+
+func (m *Matrix[T]) ReadFromFileDescriptor(f *os.File) error {
+	_, err := fmt.Fscanf(f, "%d,%d\n", &m.rows, &m.cols)
 	if err != nil {
 		return err
 	}
