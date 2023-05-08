@@ -6,36 +6,74 @@ import (
 	"fmt"
 	"testing"
 
-  "github.com/henrycg/simplepir/rand"
+ 	"github.com/henrycg/simplepir/rand"
 )
 
-func TestGob(t *testing.T) {
-	m := New[Elem32](5, 5)
-	m.Set(1, 0, 0)
-	m.Set(2, 0, 1)
-	m.Set(3, 0, 2)
+func testGob[U Elem](t *testing.T) {
+	rand := rand.NewRandomBufPRG()
+	m := Rand[U](rand, 5, 5, 0)
 
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(m)
 	if err != nil {
 		fmt.Println(err)
-		panic("Encoding failed")
+		t.Fail()
 	}
 
 	dec := gob.NewDecoder(&buf)
-	var n Matrix[Elem32]
+	var n Matrix[U]
 	err = dec.Decode(&n)
 	if err != nil {
 		fmt.Println(err)
-		panic("Decoding failed")
+		t.Fail()
 	}
 
 	if !m.Equals(&n) {
 		m.Print()
 		n.Print()
-		panic("Objects are not equal")
+		t.Fail()
 	}
+}
+
+func TestGob32(t *testing.T) {
+	testGob[Elem32](t)
+}
+
+func TestGob64(t *testing.T) {
+	testGob[Elem64](t)
+}
+
+func testToFile[U Elem](t *testing.T, fn string) {
+	rand := rand.NewRandomBufPRG()
+
+	m := Rand[U](rand, 5, 5, 0)
+	err := m.WriteToFile(fn)
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	n := new(Matrix[U])
+	err = n.ReadFromFile(fn)
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	if !m.Equals(n) {
+		m.Print()
+		n.Print()
+		t.Fail()
+	}
+}
+
+func TestToFile32(t *testing.T) {
+	testToFile[Elem32](t, "test32.log")
+}
+
+func TestToFile64(t *testing.T) {
+	testToFile[Elem64](t, "test64.log")
 }
 
 func testAdd[U Elem](t *testing.T, r1 uint64, c1 uint64) {
