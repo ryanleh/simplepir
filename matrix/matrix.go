@@ -33,6 +33,12 @@ type Matrix[T Elem] struct {
 	data []T
 }
 
+type MatrixSeeded[T Elem] struct {
+	src  []IoRandSource
+	rows []uint64
+	cols uint64
+}
+
 func (Elem32) Bitlen() uint64 {
 	return 32
 }
@@ -73,6 +79,14 @@ func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
 	out.rows = rows
 	out.cols = cols
 	out.data = make([]T, rows*cols)
+	return out
+}
+
+func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSeeded[T] {
+	out := new(MatrixSeeded[T])
+	out.src = src
+	out.rows = rows
+	out.cols = cols
 	return out
 }
 

@@ -135,9 +135,14 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   rand2 := rand.NewBufPRG(rand.NewPRG(key))
   rand3 := rand.NewBufPRG(rand.NewPRG(key))
   m3 := Rand[U](rand2, r1, c1, 0)
+  m4 := &MatrixSeeded[U] {
+    src: []IoRandSource{ rand3 },
+    rows: []uint64{ r1 },
+    cols: c1,
+  }
 
   z3 := Mul(m3, m2)
-  z4 := MulSeededLeft(rand3, r1, c1, 0, m2)
+  z4 := MulSeededLeft(m4, m2)
 
   if !z3.Equals(z4) {
     t.Fail()
@@ -146,12 +151,55 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   // Test right-seeded multiplication
   rand4 := rand.NewBufPRG(rand.NewPRG(key))
   rand5 := rand.NewBufPRG(rand.NewPRG(key))
-  m4 := Rand[U](rand4, r2, c2, 0)
+  m5 := Rand[U](rand4, r2, c2, 0)
+  m6 := &MatrixSeeded[U] {
+    src: []IoRandSource{ rand5 },
+    rows: []uint64{ r2},
+    cols: c2,
+  }
 
-  z5 := Mul(m1, m4)
-  z6 := MulSeededRight(m1, rand5, r2, c2, 0)
+  z5 := Mul(m1, m5)
+  z6 := MulSeededRight(m1, m6)
 
   if !z5.Equals(z6) {
+    t.Fail()
+  }
+
+  // Test left-seeded multiplication with multiple keys
+  key2 := rand.RandomPRGKey()
+  rand6 := rand.NewBufPRG(rand.NewPRG(key))
+  rand7 := rand.NewBufPRG(rand.NewPRG(key2))
+  rand8 := rand.NewBufPRG(rand.NewPRG(key2))
+  m3.Concat(Rand[U](rand7, r1, c1, 0))
+  m7 := &MatrixSeeded[U] {
+    src: []IoRandSource{ rand6, rand8 },
+    rows: []uint64{ r1, r1 },
+    cols: c1,
+  }
+
+  z7 := Mul(m3, m2)
+  z8 := MulSeededLeft(m7, m2)
+
+  if !z7.Equals(z8) {
+    t.Fail()
+  }
+
+  // Test right-seeded multiplication with multiple keys
+  m8 := Rand[U](rand1, r1, c1 * 2, 0)
+  rand9 := rand.NewBufPRG(rand.NewPRG(key))
+  rand10 := rand.NewBufPRG(rand.NewPRG(key2))
+  rand11 := rand.NewBufPRG(rand.NewPRG(key2))
+  m5.Concat(Rand[U](rand10, r2, c2, 0))
+  m9 := &MatrixSeeded[U] {
+    src: []IoRandSource{ rand9, rand11 },
+    rows: []uint64{ r2, r2 },
+    cols: c2,
+  }
+
+  z9 := Mul(m8, m5)
+  z10 := MulSeededRight(m8, m9)
+
+  if !z9.Equals(z10) {
     t.Fail()
   }
 }

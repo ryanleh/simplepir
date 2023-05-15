@@ -108,22 +108,38 @@ func Mul[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	return out
 }
 
-func MulSeededLeft[T Elem](aSrc IoRandSource, aRows, aCols, aMod uint64, b *Matrix[T]) *Matrix[T] {
-	if aCols != b.rows {
-		fmt.Printf("%d-by-%d vs. %d-by-%d\n", aRows, aCols, b.rows, b.cols)
+func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
+        if len(a.src) != len(a.rows) {
+                panic("Bad input")
+        }
+
+        aRows := uint64(0)
+        for _, rows := range a.rows {
+                aRows += rows
+        }
+
+	if a.cols != b.rows {
+		fmt.Printf("%d-by-%d vs. %d-by-%d\n", aRows, a.cols, b.rows, b.cols)
 		panic("Dimension mismatch")
 	}
 
 	out := Zeros[T](aRows, b.cols)
-	m := big.NewInt(int64(aMod))
-	if aMod == 0 {
-		m.SetInt64(1)
-		m.Lsh(m, uint(T(0).Bitlen()))
-	}
+	m := big.NewInt(int64(1))
+	m.Lsh(m, uint(T(0).Bitlen()))
+
+        curSrc := a.src[0]
+        at := 0
+        row := uint64(0)
 
 	for i := uint64(0); i < aRows; i++ {
-		for j := uint64(0); j < aCols; j++ {
-			v, err := rand.Int(aSrc, m)
+                if row >= a.rows[at] {
+                        at += 1
+                        curSrc = a.src[at]
+                        row = 0
+                }
+
+		for j := uint64(0); j < a.cols; j++ {
+			v, err := rand.Int(curSrc, m)
 			if err != nil {
 				panic("Randomness error")
 			}
@@ -133,36 +149,56 @@ func MulSeededLeft[T Elem](aSrc IoRandSource, aRows, aCols, aMod uint64, b *Matr
 				out.data[i * b.cols + k] += val * b.Get(j, k)
 			}
 		}
+
+		row += 1
 	}
 
 	return out
 }
 
-func MulSeededRight[T Elem](a *Matrix[T], bSrc IoRandSource, bRows, bCols, bMod uint64) *Matrix[T] {
+func MulSeededRight[T Elem](a *Matrix[T], b *MatrixSeeded[T]) *Matrix[T] {
+	if len(b.src) != len(b.rows) {
+		panic("Bad input")
+	}
+
+	bRows := uint64(0)
+	for _, rows := range b.rows {
+		bRows += rows
+	}
+
 	if a.cols != bRows {
-		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, bRows, bCols)
+		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, bRows, b.cols)
 		panic("Dimension mismatch")
 	}
 
-	out := Zeros[T](a.rows, bCols)
-	m := big.NewInt(int64(bMod))
-	if bMod == 0 {
-		m.SetInt64(1)
-		m.Lsh(m, uint(T(0).Bitlen()))
-	}
+	out := Zeros[T](a.rows, b.cols)
+	m := big.NewInt(int64(1))
+	m.Lsh(m, uint(T(0).Bitlen()))
+
+	curSrc := b.src[0]
+	at := 0
+	row := uint64(0)
 
 	for j := uint64(0); j < a.cols; j++ {
-		for k := uint64(0); k < bCols; k++ {
-			v, err := rand.Int(bSrc, m)
+		if row >= b.rows[at] {
+			at += 1
+			curSrc = b.src[at]
+			row = 0
+		}
+
+		for k := uint64(0); k < b.cols; k++ {
+			v, err := rand.Int(curSrc, m)
 			if err != nil {
 				panic("Randomness error")
 			}
 			val := T(v.Uint64())
 
 			for i := uint64(0); i < a.rows; i++ {
-				out.data[i * bCols + k] += val * a.Get(i, j)
+				out.data[i * b.cols + k] += val * a.Get(i, j)
 			}
 		}
+
+		row += 1
 	}
 
 	return out

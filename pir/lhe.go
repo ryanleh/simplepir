@@ -37,9 +37,15 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
 	}
 
+        src := make([]matrix.IoRandSource, len(c.matrixAseeds))
+        for i, seed := range c.matrixAseeds {
+                src[i] = rand.NewBufPRG(rand.NewPRG(seed))
+        }
+        matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
+
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
-	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
+	query := matrix.MulSeededLeft(matrixAseeded, s.secret)
 	query.Add(err)
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -67,44 +73,10 @@ func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T
 }
 
 func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T]) {
-	arr := arrIn.Copy()
+	s := c.PreprocessQueryLHE()
+	q := c.QueryLHEPreprocessed(arrIn, s)
 
-	if arr.Rows() != c.dbinfo.M || arr.Cols() != 1 {
-		panic("Parameter mismatch")
-	}
-
-	if (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
-		panic("Not yet supported.")
-	}
-
-	// checks that p is a power of 2 (since q must be)
-	if (c.params.P & (c.params.P - 1)) != 0 {
-		panic("LHE requires p | q.")
-	}
-
-	//log.Printf("N=%v,  P=%v, L=%v, M=%v", c.dbinfo.Num, c.dbinfo.P(), c.dbinfo.L, c.dbinfo.M)
-
-	s := &SecretLHE[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
-		arr:    arr,
-	}
-
-	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-
-	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
-	query.Add(err)
-
-	arr.MulConst(T(c.params.Delta))
-	query.Add(arr)
-
-	// Pad the query to match the dimensions of the compressed DB
-	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
-		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
-	}
-
-	s.query = query.Copy()
-
-	return s, &Query[T]{ query }
+	return s, q
 }
 
 func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {

@@ -11,21 +11,22 @@ import (
 )
 
 type Server[T matrix.Elem] struct {
-	params  *lwe.Params
-	matrixA *rand.PRGKey
+	params       *lwe.Params
+	matrixAseed  *rand.PRGKey
 
-	db      *Database[T]
-	hint    *matrix.Matrix[T]
+	db           *Database[T]
+	hint         *matrix.Matrix[T]
 }
 
 type Client[T matrix.Elem] struct {
-	prg     *rand.BufPRGReader
+	prg          *rand.BufPRGReader
 
-	params  *lwe.Params
-	hint    *matrix.Matrix[T]
+	params       *lwe.Params
+	dbinfo       *DBInfo
+	hint         *matrix.Matrix[T]
 
-	matrixA *rand.PRGKey
-	dbinfo  *DBInfo
+	matrixAseeds []*rand.PRGKey
+	matrixArows  []uint64
 }
 
 type Query[T matrix.Elem] struct {
@@ -58,7 +59,9 @@ func (c *Client[T]) Copy() *Client[T] {
 	out.prg = rand.NewRandomBufPRG()
 	out.params = c.params
 	out.dbinfo = c.dbinfo
-	out.matrixA = c.matrixA
+
+	out.matrixAseeds = c.matrixAseeds // Warning: not copied
+	out.matrixArows = c.matrixArows // Warning: not copied
 
 	out.hint = c.hint.Copy()
 
@@ -92,20 +95,22 @@ func (a1 *Answer[T]) AddWithMismatch(a2 *Answer[T]) {
 }
 
 func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
-	matrixA := rand.RandomPRGKey()
-	return setupServer(db, matrixA)
+	return setupServer(db, rand.RandomPRGKey())
 }
 
 func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T] {
 	return setupServer(db, seed)
 }
 
-func setupServer[T matrix.Elem](db *Database[T], matrixA *rand.PRGKey) *Server[T] {
+func setupServer[T matrix.Elem](db *Database[T], matrixAseed *rand.PRGKey) *Server[T] {
+	src := []matrix.IoRandSource { rand.NewBufPRG(rand.NewPRG(matrixAseed)) }
+	matrixAseeded := matrix.NewSeeded[T](src, []uint64{ db.Info.M }, db.Info.Params.N)
+
 	s := &Server[T]{
-		params:  db.Info.Params,
-		matrixA: matrixA,
-		db:      db.Copy(),
-		hint:    matrix.MulSeededRight(db.Data, rand.NewBufPRG(rand.NewPRG(matrixA)), db.Info.M, db.Info.Params.N, 0),
+		params:      db.Info.Params,
+		matrixAseed: matrixAseed,
+		db:          db.Copy(),
+		hint:        matrix.MulSeededRight(db.Data, matrixAseeded),
 	}
 
 	s.db.Squish()
@@ -118,7 +123,7 @@ func (s *Server[T]) Hint() *matrix.Matrix[T] {
 }
 
 func (s *Server[T]) MatrixA() *rand.PRGKey {
-	return s.matrixA
+	return s.matrixAseed
 }
 
 func (s *Server[T]) Params() *lwe.Params {
@@ -133,15 +138,20 @@ func (s *Server[T]) Get(i uint64) uint64 {
 	return s.db.GetElem(i)
 }
 
-func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
+func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixAseed *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
+	return NewClientDistributed(hint, []*rand.PRGKey { matrixAseed}, []uint64{ dbinfo.M }, dbinfo)
+}
+
+func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []*rand.PRGKey, matrixArows []uint64, dbinfo *DBInfo) *Client[T] {
 	return &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
 		hint:   hint.Copy(),
-
-		matrixA: matrixA,
 		dbinfo:  dbinfo,
+
+		matrixAseeds: matrixAseeds, // Warning: not copied
+		matrixArows: matrixArows, // Warning: not copied
 	}
 }
 
@@ -150,9 +160,15 @@ func (c *Client[T]) PreprocessQuery() *Secret[T] {
 		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
 	}
 
+	src := make([]matrix.IoRandSource, len(c.matrixAseeds))
+	for i, seed := range c.matrixAseeds {
+		src[i] = rand.NewBufPRG(rand.NewPRG(seed))
+	}
+        matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
+
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
-	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
+	query := matrix.MulSeededLeft(matrixAseeded, s.secret)
 	query.Add(err)
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -174,27 +190,10 @@ func (c *Client[T]) QueryPreprocessed(i uint64, s *Secret[T]) *Query[T] {
 }
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
-	s := &Secret[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
-		//secret: matrix.Zeros[T](c.params.N, 1),
-		index:  i,
-	}
+	s := c.PreprocessQuery()
+	q := c.QueryPreprocessed(i, s)
 
-	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-	//err := matrix.Zeros[T](c.dbinfo.M, 1)
-
-	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
-	query.Add(err)
-	query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
-
-	// Pad the query to match the dimensions of the compressed DB
-	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
-		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
-	}
-
-	s.query = query
-
-	return s, &Query[T]{ query }
+	return s, q
 }
 
 
