@@ -63,10 +63,11 @@ func TestAdd64(t *testing.T) {
 }
 
 func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
-  rand := rand.NewRandomBufPRG()
+  // First, test regular multiplication
+  rand1 := rand.NewRandomBufPRG()
 
-  m1 := Rand[U](rand, r1, c1, 0)
-  m2 := Rand[U](rand, r2, c2, 0)
+  m1 := Rand[U](rand1, r1, c1, 0)
+  m2 := Rand[U](rand1, r2, c2, 0)
   z := Zeros[U](r2, c2)
   zout := Zeros[U](r1, c2)
 
@@ -88,6 +89,31 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   }
 
   if !out.Equals(res) {
+    t.Fail()
+  }
+
+  // Test left-seeded multiplication
+  key := rand.RandomPRGKey()
+  rand2 := rand.NewBufPRG(rand.NewPRG(key))
+  rand3 := rand.NewBufPRG(rand.NewPRG(key))
+  m3 := Rand[U](rand2, r1, c1, 0)
+
+  z3 := Mul(m3, m2)
+  z4 := MulSeededLeft(rand3, r1, c1, 0, m2)
+
+  if !z3.Equals(z4) {
+    t.Fail()
+  }
+
+  // Test right-seeded multiplication
+  rand4 := rand.NewBufPRG(rand.NewPRG(key))
+  rand5 := rand.NewBufPRG(rand.NewPRG(key))
+  m4 := Rand[U](rand4, r2, c2, 0)
+
+  z5 := Mul(m1, m4)
+  z6 := MulSeededRight(m1, rand5, r2, c2, 0)
+
+  if !z5.Equals(z6) {
     t.Fail()
   }
 }

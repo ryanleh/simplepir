@@ -1,8 +1,8 @@
 package pir
 
 import (
-//  "log"
-  "github.com/henrycg/simplepir/matrix"
+        "github.com/henrycg/simplepir/rand"
+        "github.com/henrycg/simplepir/matrix"
 )
 
 type SecretLHE[T matrix.Elem] struct {
@@ -39,7 +39,7 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
-	query := matrix.Mul(c.matrixA, s.secret)
+	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
 	query.Add(err)
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -91,7 +91,7 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
-	query := matrix.Mul(c.matrixA, s.secret)
+	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
 	query.Add(err)
 
 	arr.MulConst(T(c.params.Delta))

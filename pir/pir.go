@@ -5,26 +5,26 @@ import (
 )
 
 import (
-  "github.com/henrycg/simplepir/lwe"
-  "github.com/henrycg/simplepir/rand"
-  "github.com/henrycg/simplepir/matrix"
+	"github.com/henrycg/simplepir/lwe"
+	"github.com/henrycg/simplepir/rand"
+	"github.com/henrycg/simplepir/matrix"
 )
 
 type Server[T matrix.Elem] struct {
 	params  *lwe.Params
-	matrixA *matrix.Matrix[T]
+	matrixA *rand.PRGKey
 
-	db   *Database[T]
-	hint *matrix.Matrix[T]
+	db      *Database[T]
+	hint    *matrix.Matrix[T]
 }
 
 type Client[T matrix.Elem] struct {
-	prg *rand.BufPRGReader
+	prg     *rand.BufPRGReader
 
-	params *lwe.Params
-	hint   *matrix.Matrix[T]
+	params  *lwe.Params
+	hint    *matrix.Matrix[T]
 
-	matrixA *matrix.Matrix[T]
+	matrixA *rand.PRGKey
 	dbinfo  *DBInfo
 }
 
@@ -58,9 +58,9 @@ func (c *Client[T]) Copy() *Client[T] {
 	out.prg = rand.NewRandomBufPRG()
 	out.params = c.params
 	out.dbinfo = c.dbinfo
+	out.matrixA = c.matrixA
 
 	out.hint = c.hint.Copy()
-	out.matrixA = c.matrixA.Copy()
 
 	return out
 }
@@ -92,25 +92,20 @@ func (a1 *Answer[T]) AddWithMismatch(a2 *Answer[T]) {
 }
 
 func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
-	prg := rand.NewRandomBufPRG()
-	params := db.Info.Params
-	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, 0)
+	matrixA := rand.RandomPRGKey()
 	return setupServer(db, matrixA)
 }
 
 func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T] {
-	prg := rand.NewBufPRG(rand.NewPRG(seed))
-	params := db.Info.Params
-	matrixA := matrix.Rand[T](prg, db.Info.M, params.N, 0)
-	return setupServer(db, matrixA)
+	return setupServer(db, seed)
 }
 
-func setupServer[T matrix.Elem](db *Database[T], matrixA *matrix.Matrix[T]) *Server[T] {
+func setupServer[T matrix.Elem](db *Database[T], matrixA *rand.PRGKey) *Server[T] {
 	s := &Server[T]{
 		params:  db.Info.Params,
 		matrixA: matrixA,
 		db:      db.Copy(),
-		hint:    matrix.Mul(db.Data, matrixA),
+		hint:    matrix.MulSeededRight(db.Data, rand.NewBufPRG(rand.NewPRG(matrixA)), db.Info.M, db.Info.Params.N, 0),
 	}
 
 	s.db.Squish()
@@ -122,7 +117,7 @@ func (s *Server[T]) Hint() *matrix.Matrix[T] {
 	return s.hint
 }
 
-func (s *Server[T]) MatrixA() *matrix.Matrix[T] {
+func (s *Server[T]) MatrixA() *rand.PRGKey {
 	return s.matrixA
 }
 
@@ -138,14 +133,14 @@ func (s *Server[T]) Get(i uint64) uint64 {
 	return s.db.GetElem(i)
 }
 
-func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *matrix.Matrix[T], dbinfo *DBInfo) *Client[T] {
+func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixA *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
 	return &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
 		hint:   hint.Copy(),
 
-		matrixA: matrixA.Copy(),
+		matrixA: matrixA,
 		dbinfo:  dbinfo,
 	}
 }
@@ -157,7 +152,7 @@ func (c *Client[T]) PreprocessQuery() *Secret[T] {
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
-	query := matrix.Mul(c.matrixA, s.secret)
+	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
 	query.Add(err)
 
 	// Pad the query to match the dimensions of the compressed DB
@@ -188,7 +183,7 @@ func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 	//err := matrix.Zeros[T](c.dbinfo.M, 1)
 
-	query := matrix.Mul(c.matrixA, s.secret)
+	query := matrix.MulSeededLeft(rand.NewBufPRG(rand.NewPRG(c.matrixA)), c.dbinfo.M, c.params.N, 0, s.secret)
 	query.Add(err)
 	query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
 

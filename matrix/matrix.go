@@ -79,11 +79,11 @@ func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
 // If mod is 0, then generate uniform random int of type T
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-  m := big.NewInt(int64(mod))
-  if mod == 0 {
-    m.SetInt64(1)
-    m.Lsh(m, uint(T(0).Bitlen()))
-  }
+	m := big.NewInt(int64(mod))
+	if mod == 0 {
+		m.SetInt64(1)
+		m.Lsh(m, uint(T(0).Bitlen()))
+  	}
 	for i := 0; i < len(out.data); i++ {
 		v, err := rand.Int(src, m)
 		if err != nil {
