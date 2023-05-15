@@ -8,6 +8,7 @@ import (
 type SecretLHE[T matrix.Elem] struct {
 	query  *matrix.Matrix[T]
 	secret *matrix.Matrix[T]
+	interm *matrix.Matrix[T]
 	arr    *matrix.Matrix[T]
 }
 
@@ -36,6 +37,8 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 	s := &SecretLHE[T]{
 		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
 	}
+
+	s.interm = matrix.Mul(c.hint, s.secret)
 
         src := make([]matrix.IoRandSource, len(c.matrixAseeds))
         for i, seed := range c.matrixAseeds {
@@ -84,11 +87,8 @@ func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matr
 		panic("Not yet supported")
 	}
   
-  ans := ansIn.answer.Copy()
-
-
-	interm := matrix.Mul(c.hint, secret.secret)
-	ans.Sub(interm)
+	ans := ansIn.answer.Copy()
+	ans.Sub(secret.interm)
 
 	out := matrix.Zeros[T](ans.Rows(), 1)
 	for row := uint64(0); row < ans.Rows(); row++ {
