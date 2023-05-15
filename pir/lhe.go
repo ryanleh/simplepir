@@ -42,7 +42,7 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 
         src := make([]matrix.IoRandSource, len(c.matrixAseeds))
         for i, seed := range c.matrixAseeds {
-                src[i] = rand.NewBufPRG(rand.NewPRG(seed))
+                src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
         }
         matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
 

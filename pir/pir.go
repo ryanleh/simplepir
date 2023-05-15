@@ -25,7 +25,7 @@ type Client[T matrix.Elem] struct {
 	dbinfo       *DBInfo
 	hint         *matrix.Matrix[T]
 
-	matrixAseeds []*rand.PRGKey
+	matrixAseeds []rand.PRGKey
 	matrixArows  []uint64
 }
 
@@ -140,10 +140,10 @@ func (s *Server[T]) Get(i uint64) uint64 {
 }
 
 func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixAseed *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
-	return NewClientDistributed(hint, []*rand.PRGKey { matrixAseed}, []uint64{ dbinfo.M }, dbinfo)
+	return NewClientDistributed(hint, []rand.PRGKey { *matrixAseed}, []uint64{ dbinfo.M }, dbinfo)
 }
 
-func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []*rand.PRGKey, matrixArows []uint64, dbinfo *DBInfo) *Client[T] {
+func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []rand.PRGKey, matrixArows []uint64, dbinfo *DBInfo) *Client[T] {
 	return &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
@@ -165,7 +165,7 @@ func (c *Client[T]) PreprocessQuery() *Secret[T] {
 
 	src := make([]matrix.IoRandSource, len(c.matrixAseeds))
 	for i, seed := range c.matrixAseeds {
-		src[i] = rand.NewBufPRG(rand.NewPRG(seed))
+		src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
 	}
         matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
 
