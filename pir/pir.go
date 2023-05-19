@@ -104,14 +104,16 @@ func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T]
 }
 
 func setupServer[T matrix.Elem](db *Database[T], matrixAseed *rand.PRGKey) *Server[T] {
-	src := []matrix.IoRandSource { rand.NewBufPRG(rand.NewPRG(matrixAseed)) }
-	matrixAseeded := matrix.NewSeeded[T](src, []uint64{ db.Info.M }, db.Info.Params.N)
+	src := rand.NewBufPRG(rand.NewPRG(matrixAseed))
+	//matrixAseeded := matrix.NewSeeded[T]([]matrix.IoRandSource{ src }, []uint64{ db.Info.M }, db.Info.Params.N)
+        matrixA := matrix.Rand[T](src, db.Info.M, db.Info.Params.N, 0)
 
 	s := &Server[T]{
 		params:      db.Info.Params,
 		matrixAseed: matrixAseed,
 		db:          db.Copy(),
-		hint:        matrix.MulSeededRight(db.Data, matrixAseeded),
+		//hint:        matrix.MulSeededRight(db.Data, matrixAseeded),
+		hint:        matrix.Mul(db.Data, matrixA),
 	}
 
 	s.db.Squish()
