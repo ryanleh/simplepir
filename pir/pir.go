@@ -77,14 +77,20 @@ func (a *Answer[T]) Dim() (uint64, uint64) {
 	return a.answer.Rows(), a.answer.Cols()
 }
 
-func (q *Query[T]) SelectRows(start, num uint64) *Query[T] {
-	res := new(Query[T])
-	res.query = q.query.RowsDeepCopy(start, num)
-	return res
+func (q *Query[T]) AppendZeros(num uint64) {
+        q.query.AppendZeros(num)
 }
 
-func (q *Query[T]) AppendZeros(num uint64) {
-	q.query.AppendZeros(num)
+func (q *Query[T]) SelectRows(start, num, squishing uint64) *Query[T] {
+	res := new(Query[T])
+	res.query = q.query.RowsDeepCopy(start, num)
+
+	r, c := res.Dim()
+	if (r * c) % squishing != 0 {
+		res.AppendZeros(squishing - ((r * c) % squishing)) 
+	}
+
+	return res
 }
 
 func (a1 *Answer[T]) Add(a2 *Answer[T]) {
