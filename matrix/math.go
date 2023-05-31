@@ -6,9 +6,9 @@ import "C"
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"unsafe"
-	"math/big"
 )
 
 func (a *Matrix[T]) Add(b *Matrix[T]) {
@@ -124,77 +124,37 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	}
 
 	out := Zeros[T](aRows, b.cols)
-	m := big.NewInt(int64(1))
-	m.Lsh(m, uint(T(0).Bitlen()))
-
-        curSrc := a.src[0]
+        rand.Reader = a.src[0]
         at := 0
         row := uint64(0)
+
+	var val T
+	buf := make([]byte, T(0).Bitlen() / 8)
 
 	for i := uint64(0); i < aRows; i++ {
                 if row >= a.rows[at] {
                         at += 1
-                        curSrc = a.src[at]
+                        rand.Reader = a.src[at]
                         row = 0
                 }
 
 		for j := uint64(0); j < a.cols; j++ {
-			v, err := rand.Int(curSrc, m)
+			_, err := rand.Read(buf)
 			if err != nil {
 				panic("Randomness error")
 			}
-			val := T(v.Uint64())
+
+			switch T(0).Bitlen() {
+				case 32:
+					val = T(binary.LittleEndian.Uint32(buf))
+				case 64:
+					val = T(binary.LittleEndian.Uint64(buf))
+                		default:
+                        		panic("Shouldn't get here")
+        		}
 
 			for k := uint64(0); k < b.cols; k++ {
 				out.data[i * b.cols + k] += val * b.Get(j, k)
-			}
-		}
-
-		row += 1
-	}
-
-	return out
-}
-
-func MulSeededRight[T Elem](a *Matrix[T], b *MatrixSeeded[T]) *Matrix[T] {
-	if len(b.src) != len(b.rows) {
-		panic("Bad input")
-	}
-
-	bRows := uint64(0)
-	for _, rows := range b.rows {
-		bRows += rows
-	}
-
-	if a.cols != bRows {
-		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, bRows, b.cols)
-		panic("Dimension mismatch")
-	}
-
-	out := Zeros[T](a.rows, b.cols)
-	m := big.NewInt(int64(1))
-	m.Lsh(m, uint(T(0).Bitlen()))
-
-	curSrc := b.src[0]
-	at := 0
-	row := uint64(0)
-
-	for j := uint64(0); j < a.cols; j++ {
-		if row >= b.rows[at] {
-			at += 1
-			curSrc = b.src[at]
-			row = 0
-		}
-
-		for k := uint64(0); k < b.cols; k++ {
-			v, err := rand.Int(curSrc, m)
-			if err != nil {
-				panic("Randomness error")
-			}
-			val := T(v.Uint64())
-
-			for i := uint64(0); i < a.rows; i++ {
-				out.data[i * b.cols + k] += val * a.Get(i, j)
 			}
 		}
 

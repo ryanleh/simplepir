@@ -6,6 +6,7 @@ import "C"
 
 import (
 	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math/big"
@@ -93,11 +94,29 @@ func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSe
 // If mod is 0, then generate uniform random int of type T
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
-	m := big.NewInt(int64(mod))
 	if mod == 0 {
-		m.SetInt64(1)
-		m.Lsh(m, uint(T(0).Bitlen()))
+		rand.Reader = src
+		buf := make([]byte, T(0).Bitlen() / 8)
+
+		for i := 0; i < len(out.data); i++ {
+			_, err := rand.Read(buf)
+                        if err != nil {
+                                panic("Randomness error")
+                        }
+
+			switch T(0).Bitlen() {
+                		case 32:
+					out.data[i] = T(binary.LittleEndian.Uint32(buf))
+                        	case 64:
+					out.data[i] = T(binary.LittleEndian.Uint64(buf))
+                        	default:
+                                	panic("Shouldn't get here")
+			}
+        	}
+        	return out
 	}
+
+	m := big.NewInt(int64(mod))
 	for i := 0; i < len(out.data); i++ {
 		v, err := rand.Int(src, m)
 		if err != nil {
