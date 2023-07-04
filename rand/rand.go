@@ -32,7 +32,7 @@ import (
 
 type PRGKey [aes.BlockSize]byte
 
-const bufSize = 30 * 1024 * 1024
+const bufSize = 8192
 
 func (r *BufPRGReader) MathRand() *mrand.Rand {
 	return mrand.New(r)

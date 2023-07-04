@@ -5,7 +5,7 @@ package matrix
 import "C"
 
 import (
-	"crypto/rand"
+	"io"
 	"encoding/binary"
 	"fmt"
 	"unsafe"
@@ -124,9 +124,9 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	}
 
 	out := Zeros[T](aRows, b.cols)
-        rand.Reader = a.src[0]
         at := 0
         row := uint64(0)
+	src := a.src[0]
 
 	var val T
 	buf := make([]byte, T(0).Bitlen() / 8)
@@ -134,12 +134,12 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	for i := uint64(0); i < aRows; i++ {
                 if row >= a.rows[at] {
                         at += 1
-                        rand.Reader = a.src[at]
+                        src = a.src[at]
                         row = 0
                 }
 
 		for j := uint64(0); j < a.cols; j++ {
-			_, err := rand.Read(buf)
+			_, err := io.ReadFull(src, buf)
 			if err != nil {
 				panic("Randomness error")
 			}

@@ -95,11 +95,9 @@ func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSe
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
 	if mod == 0 {
-		rand.Reader = src
 		buf := make([]byte, T(0).Bitlen() / 8)
-
 		for i := 0; i < len(out.data); i++ {
-			_, err := rand.Read(buf)
+			_, err := io.ReadFull(src, buf)
                         if err != nil {
                                 panic("Randomness error")
                         }
