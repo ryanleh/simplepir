@@ -59,6 +59,12 @@ func (m *Matrix[T]) Copy() *Matrix[T] {
 	return out
 }
 
+func (m *Matrix[T]) Data() []T {
+	data := make([]T, len(m.data))
+	copy(data[:], m.data[:])
+        return data
+}
+
 func (m *Matrix[T]) Rows() uint64 {
 	return m.rows
 }
