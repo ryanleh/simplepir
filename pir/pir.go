@@ -166,7 +166,7 @@ func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []
 
 func (c *Client[T]) PreprocessQuery() *Secret[T] {
 	s := &Secret[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 0),
+		secret: matrix.Gaussian[T](c.prg, c.params.N, 1),
 	}
 
 	s.interm = matrix.Mul(c.hint, s.secret)
