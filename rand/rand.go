@@ -1,7 +1,7 @@
 // Code taken from: https://github.com/henrycg/prio/blob/master/utils/rand.go
 /*
 
-Copyright (c) 2016, Henry Corrigan-Gibbs
+Copyright (c) 2016,2023 Henry Corrigan-Gibbs
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -44,7 +44,8 @@ func (r *BufPRGReader) MathRand() *mrand.Rand {
 // pseudo-random bytes.
 type PRGReader struct {
 	Key    PRGKey
-	stream cipher.Stream
+	ctr    uint64
+	block  cipher.Block
 }
 
 type BufPRGReader struct {
@@ -58,14 +59,12 @@ func NewPRG(key *PRGKey) *PRGReader {
 	out.Key = *key
 
 	var err error
-	var iv [aes.BlockSize]byte
 
-	block, err := aes.NewCipher(key[:])
+	out.block, err = aes.NewCipher(key[:])
 	if err != nil {
 		panic(err)
 	}
 
-	out.stream = cipher.NewCTR(block, iv[:])
 	return out
 }
 
@@ -84,13 +83,20 @@ func RandomPRG() *PRGReader {
 }
 
 func (s *PRGReader) Read(p []byte) (int, error) {
-	if len(p) < aes.BlockSize {
-		var buf [aes.BlockSize]byte
-		s.stream.XORKeyStream(buf[:], buf[:])
-		copy(p[:], buf[:])
-	} else {
-		s.stream.XORKeyStream(p, p)
-	}
+  var buf [aes.BlockSize]byte
+
+  for done := 0; done < len(p); done += aes.BlockSize {
+    s.ctr += 1
+    binary.BigEndian.PutUint64(buf[:], s.ctr)
+
+    if len(p[done:]) >= aes.BlockSize {
+      s.block.Encrypt(p[done:], buf[:])
+    } else {
+      s.block.Encrypt(buf[:], buf[:])
+      copy(p[done:], buf[:])
+    }
+  }
+
 	return len(p), nil
 }
 
