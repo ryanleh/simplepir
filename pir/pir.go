@@ -44,31 +44,6 @@ type Answer[T matrix.Elem] struct {
 	answer *matrix.Matrix[T]
 }
 
-func (s *Secret[T]) Copy() *Secret[T] {
-	out := new(Secret[T])
-
-	out.query = s.query.Copy()
-	out.secret = s.secret.Copy()
-	out.index = s.index
-
-	return out
-}
-
-func (c *Client[T]) Copy() *Client[T] {
-	out := new(Client[T])
-
-	out.prg = rand.NewRandomBufPRG()
-	out.params = c.params
-	out.dbinfo = c.dbinfo
-
-	out.matrixAseeds = c.matrixAseeds // Warning: not copied
-	out.matrixArows = c.matrixArows // Warning: not copied
-
-	out.hint = c.hint.Copy()
-
-	return out
-}
-
 func (q *Query[T]) Dim() (uint64, uint64) {
 	return q.query.Rows(), q.query.Cols()
 }

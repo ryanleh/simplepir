@@ -16,16 +16,6 @@ func (s *SecretLHE[T]) AsMatrix() *matrix.Matrix[T] {
   return s.secret
 }
 
-func (s *SecretLHE[T]) Copy() *SecretLHE[T] {
-	out := new(SecretLHE[T])
-
-	out.query = s.query.Copy()
-	out.secret = s.secret.Copy()
-	out.arr = s.arr.Copy()
-
-	return out
-}
-
 func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 	if (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
 		panic("Not yet supported.")
