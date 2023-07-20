@@ -12,6 +12,10 @@ type SecretLHE[T matrix.Elem] struct {
 	arr    *matrix.Matrix[T]
 }
 
+func (s *SecretLHE[T]) AsMatrix() *matrix.Matrix[T] {
+  return s.secret
+}
+
 func (s *SecretLHE[T]) Copy() *SecretLHE[T] {
 	out := new(SecretLHE[T])
 
