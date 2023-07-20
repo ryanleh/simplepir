@@ -78,14 +78,7 @@ func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T])
 	return s, q
 }
 
-func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
-	if (c.dbinfo.Ne != 1) {
-		panic("Not yet supported")
-	}
-  
-	ans := ansIn.answer.Copy()
-	ans.Sub(secret.interm)
-
+func (c *Client[T]) DecodeManyLHE(ans *matrix.Matrix[T]) *matrix.Matrix[T] {
 	out := matrix.Zeros[T](ans.Rows(), 1)
 	for row := uint64(0); row < ans.Rows(); row++ {
 		noised := uint64(ans.Get(row, 0))
@@ -95,4 +88,15 @@ func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matr
 	}
 
 	return out
+}
+
+func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
+	if (c.dbinfo.Ne != 1) {
+		panic("Not yet supported")
+	}
+  
+	ans := ansIn.answer.Copy()
+	ans.Sub(secret.interm)
+
+  return c.DecodeManyLHE(ans)
 }

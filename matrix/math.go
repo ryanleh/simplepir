@@ -231,3 +231,11 @@ func (m *Matrix[T]) Round(round_to uint64, mod uint64) {
 		m.data[i] = T(v % mod)
 	}
 }
+
+func (m *Matrix[T]) ReduceMod(p uint64) {
+	mod := T(p)
+	for i := 0; i < len(m.data); i++ {
+		m.data[i] = m.data[i] % mod
+	}
+}
+

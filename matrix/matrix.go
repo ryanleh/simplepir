@@ -137,13 +137,6 @@ func Zeros[T Elem](rows uint64, cols uint64) *Matrix[T] {
 	return out
 }
 
-func (m *Matrix[T]) ReduceMod(p uint64) {
-	mod := T(p)
-	for i := 0; i < len(m.data); i++ {
-		m.data[i] = m.data[i] % mod
-	}
-}
-
 func (m *Matrix[T]) Get(i, j uint64) T {
 	if i >= m.rows {
 		panic("Too many rows!")
