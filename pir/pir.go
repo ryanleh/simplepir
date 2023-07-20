@@ -111,8 +111,7 @@ func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T]
 
 func setupServer[T matrix.Elem](db *Database[T], matrixAseed *rand.PRGKey) *Server[T] {
 	src := rand.NewBufPRG(rand.NewPRG(matrixAseed))
-	//matrixAseeded := matrix.NewSeeded[T]([]matrix.IoRandSource{ src }, []uint64{ db.Info.M }, db.Info.Params.N)
-        matrixA := matrix.Rand[T](src, db.Info.M, db.Info.Params.N, 0)
+  matrixA := matrix.Rand[T](src, db.Info.M, db.Info.Params.N, 0)
 
 	s := &Server[T]{
 		params:      db.Info.Params,
@@ -152,16 +151,21 @@ func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixAseed *rand.PRGKey, 
 }
 
 func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []rand.PRGKey, matrixArows []uint64, dbinfo *DBInfo) *Client[T] {
-	return &Client[T]{
+  c := &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
-		hint:   hint.Copy(),
 		dbinfo:  dbinfo,
 
 		matrixAseeds: matrixAseeds, // Warning: not copied
 		matrixArows: matrixArows,   // Warning: not copied
 	}
+
+  if hint != nil {
+		c.hint = hint.Copy()
+  }
+
+  return c
 }
 
 func (c *Client[T]) PreprocessQuery() *Secret[T] {
