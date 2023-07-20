@@ -38,13 +38,15 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 		secret: matrix.Gaussian[T](c.prg, c.params.N, 1),
 	}
 
-	s.interm = matrix.Mul(c.hint, s.secret)
+  if c.hint != nil {
+    s.interm = matrix.Mul(c.hint, s.secret)
+  }
 
-        src := make([]matrix.IoRandSource, len(c.matrixAseeds))
-        for i, seed := range c.matrixAseeds {
-                src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
-        }
-        matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
+  src := make([]matrix.IoRandSource, len(c.matrixAseeds))
+  for i, seed := range c.matrixAseeds {
+          src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
+  }
+  matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
