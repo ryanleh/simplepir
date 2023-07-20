@@ -102,20 +102,20 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 		buf := make([]byte, T(0).Bitlen() / 8)
 		for i := 0; i < len(out.data); i++ {
 			_, err := io.ReadFull(src, buf)
-                        if err != nil {
-                                panic("Randomness error")
-                        }
+      if err != nil {
+        panic("Randomness error")
+      }
 
 			switch T(0).Bitlen() {
-                		case 32:
-					out.data[i] = T(binary.LittleEndian.Uint32(buf))
-                        	case 64:
+        case 32:
+				  out.data[i] = T(binary.LittleEndian.Uint32(buf))
+        case 64:
 					out.data[i] = T(binary.LittleEndian.Uint64(buf))
-                        	default:
-                                	panic("Shouldn't get here")
+        default:
+          panic("Shouldn't get here")
 			}
-        	}
-        	return out
+    }
+    return out
 	}
 
 	m := big.NewInt(int64(mod))
