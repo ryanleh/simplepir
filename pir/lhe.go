@@ -95,7 +95,7 @@ func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matr
 		panic("Not yet supported")
 	}
   
-	ans := ansIn.answer.Copy()
+	ans := ansIn.Answer.Copy()
 	ans.Sub(secret.interm)
 
   return c.DecodeManyLHE(ans)

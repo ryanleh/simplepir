@@ -20,7 +20,7 @@ func TestGobQuery(t *testing.T) {
 	m.Set(3, 0, 2)
 
 	q := Query[matrix.Elem32]{
-		query: m,
+		Query: m,
 	}
 
 	var buf bytes.Buffer
@@ -39,9 +39,9 @@ func TestGobQuery(t *testing.T) {
 		panic("Decoding failed")
 	}
 
-	if !q.query.Equals(q2.query) {
-		q.query.Print()
-		q2.query.Print()
+	if !q.Query.Equals(q2.Query) {
+		q.Query.Print()
+		q2.Query.Print()
 		panic("Objects are not equal")
 	}
 }
@@ -53,7 +53,7 @@ func TestGobAnswer(t *testing.T) {
 	m.Set(3, 0, 2)
 
 	a := Answer[matrix.Elem32]{
-		answer: m,
+		Answer: m,
 	}
 
 	var buf bytes.Buffer
@@ -72,9 +72,9 @@ func TestGobAnswer(t *testing.T) {
 		panic("Decoding failed")
 	}
 
-	if !a.answer.Equals(a2.answer) {
-		a.answer.Print()
-		a2.answer.Print()
+	if !a.Answer.Equals(a2.Answer) {
+		a.Answer.Print()
+		a2.Answer.Print()
 		panic("Objects are not equal")
 	}
 }

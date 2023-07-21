@@ -1,22 +1,10 @@
 package pir
 
 import (
-  //"log"
-)
-
-import (
 	"github.com/henrycg/simplepir/lwe"
 	"github.com/henrycg/simplepir/rand"
 	"github.com/henrycg/simplepir/matrix"
 )
-
-type Server[T matrix.Elem] struct {
-	params       *lwe.Params
-	matrixAseed  *rand.PRGKey
-
-	db           *Database[T]
-	hint         *matrix.Matrix[T]
-}
 
 type Client[T matrix.Elem] struct {
 	prg          *rand.BufPRGReader
@@ -27,98 +15,6 @@ type Client[T matrix.Elem] struct {
 
 	matrixAseeds []rand.PRGKey
 	matrixArows  []uint64
-}
-
-type Query[T matrix.Elem] struct {
-	query *matrix.Matrix[T]
-}
-
-type Secret[T matrix.Elem] struct {
-	query  *matrix.Matrix[T]
-	secret *matrix.Matrix[T]
-	interm *matrix.Matrix[T]
-	index  uint64
-}
-
-type Answer[T matrix.Elem] struct {
-	answer *matrix.Matrix[T]
-}
-
-func (q *Query[T]) Dim() (uint64, uint64) {
-	return q.query.Rows(), q.query.Cols()
-}
-
-func (a *Answer[T]) Dim() (uint64, uint64) {
-	return a.answer.Rows(), a.answer.Cols()
-}
-
-func (q *Query[T]) AppendZeros(num uint64) {
-        q.query.AppendZeros(num)
-}
-
-func (q *Query[T]) SelectRows(start, num, squishing uint64) *Query[T] {
-	res := new(Query[T])
-	res.query = q.query.RowsDeepCopy(start, num)
-
-	r, c := res.Dim()
-	if (r * c) % squishing != 0 {
-		res.AppendZeros(squishing - ((r * c) % squishing)) 
-	}
-
-	return res
-}
-
-func (a1 *Answer[T]) Add(a2 *Answer[T]) {
-	a1.answer.Add(a2.answer)
-}
-
-func (a1 *Answer[T]) AddWithMismatch(a2 *Answer[T]) {
-	a1.answer.AddWithMismatch(a2.answer)
-}
-
-func NewServer[T matrix.Elem](db *Database[T]) *Server[T] {
-	return setupServer(db, rand.RandomPRGKey())
-}
-
-func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T] {
-	return setupServer(db, seed)
-}
-
-func setupServer[T matrix.Elem](db *Database[T], matrixAseed *rand.PRGKey) *Server[T] {
-	src := rand.NewBufPRG(rand.NewPRG(matrixAseed))
-  matrixA := matrix.Rand[T](src, db.Info.M, db.Info.Params.N, 0)
-
-	s := &Server[T]{
-		params:      db.Info.Params,
-		matrixAseed: matrixAseed,
-		db:          db.Copy(),
-		//hint:        matrix.MulSeededRight(db.Data, matrixAseeded),
-		hint:        matrix.Mul(db.Data, matrixA),
-	}
-
-	s.db.Squish()
-
-	return s
-}
-
-func (s *Server[T]) Hint() *matrix.Matrix[T] {
-	return s.hint
-}
-
-func (s *Server[T]) MatrixA() *rand.PRGKey {
-	return s.matrixAseed
-}
-
-func (s *Server[T]) Params() *lwe.Params {
-	return s.params
-}
-
-func (s *Server[T]) DBInfo() *DBInfo {
-	return s.db.Info
-}
-
-func (s *Server[T]) Get(i uint64) uint64 {
-	return s.db.GetElem(i)
 }
 
 func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixAseed *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
@@ -183,30 +79,25 @@ func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	return s, q
 }
 
-
-func (s *Server[T]) Answer(query *Query[T]) *Answer[T] {
-	return &Answer[T]{ matrix.MulVecPacked(s.db.Data, query.query) }
-}
-
 func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
 	row := secret.index / c.dbinfo.M
-	ans.answer.Sub(secret.interm)
+	ans.Answer.Sub(secret.interm)
 
 	var vals []uint64
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := uint64(ans.answer.Get(j, 0))
+		noised := uint64(ans.Answer.Get(j, 0))
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//log.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
-	ans.answer.Add(secret.interm)
+	ans.Answer.Add(secret.interm)
 
 	return c.dbinfo.ReconstructElem(vals, secret.index)
 }
 
 func (c *Client[T]) RecoverMany(secret *Secret[T], ansIn *Answer[T]) []uint64 {
-	ans := ansIn.answer.Copy()
+	ans := ansIn.Answer.Copy()
 	ans.Sub(secret.interm)
 
 	num_values := (ans.Rows() / c.dbinfo.Ne)

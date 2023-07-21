@@ -206,10 +206,6 @@ func (m *Matrix[T]) RowsDeepCopy(offset, num_rows uint64) *Matrix[T] {
 	return m2
 }
 
-func (m *Matrix[T]) Dim() {
-	fmt.Printf("Dims: %d-by-%d\n", m.rows, m.cols)
-}
-
 func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 	if m.Cols() != n.Cols() {
 		return false
@@ -226,7 +222,6 @@ func (m *Matrix[T]) Equals(n *Matrix[T]) bool {
 
 	return true
 }
-
 
 func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
