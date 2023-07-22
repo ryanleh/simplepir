@@ -76,7 +76,7 @@ func (m *Matrix[T]) Size() uint64 {
 }
 
 func (m *Matrix[T]) AppendZeros(n uint64) {
-	m.Concat(Zeros[T](n, 1))
+	m.Concat(Zeros[T](n, m.Cols()))
 }
 
 func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
