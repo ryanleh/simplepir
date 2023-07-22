@@ -66,7 +66,8 @@ func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T
 
 	s.arr = arr
 	arr.MulConst(T(c.params.Delta))
-	s.query.AddWithMismatch(arr)
+  arr.AppendZeros(s.query.Rows() - arrIn.Rows())
+	s.query.Add(arr)
 
 	return &Query[T] { s.query.Copy() }
 }

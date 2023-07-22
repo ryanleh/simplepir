@@ -21,21 +21,6 @@ func (a *Matrix[T]) Add(b *Matrix[T]) {
 	}
 }
 
-func (a *Matrix[T]) AddWithMismatch(b *Matrix[T]) {
-	if a.cols != b.cols {
-		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
-		panic("Dimension mismatch")
-	}
-
-	if a.rows < b.rows {
-		a.Concat(Zeros[T](b.rows-a.rows, a.cols))
-	}
-
-	for i := uint64(0); i < b.cols*b.rows; i++ {
-		a.data[i] += b.data[i]
-	}
-}
-
 func (a *Matrix[T]) MulConst(val T) {
 	for i := uint64(0); i < a.cols*a.rows; i++ {
 		a.data[i] *= val
