@@ -6,7 +6,6 @@ import "C"
 
 import (
 	"io"
-	"encoding/binary"
 	"fmt"
 	"unsafe"
 )
@@ -124,48 +123,30 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	}
 
 	out := Zeros[T](aRows, b.cols)
-        at := 0
 
-	var val T
-	var buf []byte
-	var row, start, end uint64
 	elemSz := T(0).Bitlen() / 8
+	curRows := uint64(0)
+	bPtr := unsafe.Pointer(&b.data[0])
 
-	for i := uint64(0); i < aRows; i++ {
-                if (i == 0) || (row >= a.rows[at]) {
-			if i > 0 {
-                        	at += 1
-			}
-			buf = make([]byte, elemSz * a.cols * a.rows[at])
-			_, err := io.ReadFull(a.src[at], buf)
-			if err != nil {
-				panic("Randomness error")
-			}
+	for i, arows := range a.rows {
+		buf := make([]byte, elemSz * a.cols * arows)
+		bufPtr := unsafe.Pointer(&buf[0])
+		outPtr := unsafe.Pointer(&out.data[curRows * out.cols])
+		curRows += arows
 
-                        row = 0
-			start = 0
-			end = elemSz
-                }
-
-		for j := uint64(0); j < a.cols; j++ {
-			switch T(0).Bitlen() {
-				case 32:
-					val = T(binary.LittleEndian.Uint32(buf[start:end]))
-				case 64:
-					val = T(binary.LittleEndian.Uint64(buf[start:end]))
-                		default:
-                        		panic("Shouldn't get here")
-        		}
-
-			start += elemSz
-			end += elemSz
-
-			for k := uint64(0); k < b.cols; k++ {
-				out.data[i * b.cols + k] += val * b.Get(j, k)
-			}
+		_, err := io.ReadFull(a.src[i], buf)
+		if err != nil {
+			panic("Randomness error")
 		}
 
-		row += 1
+		switch T(0).Bitlen(){
+			case 32:
+				C.randMatMul32((*Elem32)(outPtr), (*C.uint8_t)(bufPtr), (*Elem32)(bPtr), C.size_t(arows), C.size_t(a.cols), C.size_t(b.cols))
+			case 64:
+				C.randMatMul64((*Elem64)(outPtr), (*C.uint8_t)(bufPtr), (*Elem64)(bPtr), C.size_t(arows), C.size_t(a.cols), C.size_t(b.cols))
+			default:
+				panic("Shouldn't get here")
+		}
 	}
 
 	return out

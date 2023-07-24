@@ -127,6 +127,7 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   }
 
   if !out.Equals(res) {
+    fmt.Println("Failed regular")
     t.Fail()
   }
 
@@ -145,6 +146,7 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   z4 := MulSeededLeft(m4, m2)
 
   if !z3.Equals(z4) {
+    fmt.Println("Failed left-seeded")
     z3.Print()
     z4.Print()
     t.Fail()
@@ -166,6 +168,7 @@ func testMul[U Elem](t *testing.T, r1 uint64, c1 uint64, r2 uint64, c2 uint64) {
   z8 := MulSeededLeft(m7, m2)
 
   if !z7.Equals(z8) {
+    fmt.Println("Failed seeded with multiple keys")
     t.Fail()
   }
 }

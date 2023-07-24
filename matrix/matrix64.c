@@ -26,6 +26,32 @@ void matMulVec64(Elem64 *out, const Elem64 *a, const Elem64 *b,
   }
 }
 
+void randMatMul64(Elem64* out, const uint8_t *a, const Elem64 *b,
+    size_t aRows, size_t aCols, size_t bCols)
+{
+  Elem64 val;
+  Elem64 start = 0;
+
+  for (size_t i = 0; i < aRows; i++) {
+    for (size_t j = 0; j < aCols; j++) {
+      val = ((Elem64)a[start+0]) |
+	    (((Elem64)a[start+1]) << 8) |
+	    (((Elem64)a[start+2]) << 16) |
+	    (((Elem64)a[start+3]) << 24) |
+	    (((Elem64)a[start+4]) << 32) |
+	    (((Elem64)a[start+5]) << 40) |
+	    (((Elem64)a[start+6]) << 48) |
+	    (((Elem64)a[start+7]) << 56);
+
+      start += 8;
+
+      for (size_t k = 0; k < bCols; k++) {
+        out[bCols*i + k] += val * b[bCols*j + k];
+      }
+    }
+  }
+}
+
 void matMulVecPacked64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols)
 {

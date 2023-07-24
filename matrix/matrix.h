@@ -24,6 +24,9 @@ void matMulVec32(Elem32 *out, const Elem32 *a, const Elem32 *b,
 void matMulVecPacked32(Elem32 *out, const Elem32 *a, const Elem32 *b,
     size_t aRows, size_t aCols);
 
+void randMatMul32(Elem32* out, const uint8_t *a, const Elem32 *b,
+    size_t aRows, size_t aCols, size_t bCols);
+
 void matMul64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols, size_t bCols);
 
@@ -32,3 +35,6 @@ void matMulVec64(Elem64 *out, const Elem64 *a, const Elem64 *b,
 
 void matMulVecPacked64(Elem64 *out, const Elem64 *a, const Elem64 *b,
     size_t aRows, size_t aCols);
+
+void randMatMul64(Elem64* out, const uint8_t *a, const Elem64 *b,
+    size_t aRows, size_t aCols, size_t bCols);
