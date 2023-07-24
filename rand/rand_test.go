@@ -3,6 +3,7 @@ package rand
 import (
   "bytes"
 	//"log"
+  "io"
 	"testing"
 )
 
@@ -46,4 +47,21 @@ func TestPRG(t *testing.T) {
     t.Fail()
   }
 }
+/*
+func TestFill(t *testing.T) {
+  key := RandomPRGKey()
+  prg := NewPRG(key)
 
+  // 4 GB
+  buf := make([]byte, 1024*1024*1024*4)
+  prg.Read(buf[:])
+}*/
+
+func TestFillIO(t *testing.T) {
+  key := RandomPRGKey()
+  prg := NewPRG(key)
+
+  // 4 GB
+  buf := make([]byte, 1024*1024*1024*4)
+  io.ReadFull(prg, buf[:])
+}
