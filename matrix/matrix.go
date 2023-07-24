@@ -105,16 +105,14 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 		}
 
 		elemSz := T(0).Bitlen() / 8
-		buf := make([]byte, elemSz * cols)
-		for i := uint64(0); i < length; i++ {
-			if i % cols == 0 {
-				_, err := io.ReadFull(src, buf)
-				if err != nil {
-					panic("Randomness error")
-				}
-			}
+		buf := make([]byte, elemSz * length)
+		_, err := io.ReadFull(src, buf)
+		if err != nil {
+			panic("Randomness error")
+		}
 
-			start := (i % cols) * elemSz
+		for i := uint64(0); i < length; i++ {
+			start := i * elemSz
 			end := start + elemSz
 
 			switch T(0).Bitlen() {
