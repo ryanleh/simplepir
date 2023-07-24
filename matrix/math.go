@@ -129,7 +129,8 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	src := a.src[0]
 
 	var val T
-	buf := make([]byte, T(0).Bitlen() / 8)
+	elemSz := T(0).Bitlen() / 8
+	buf := make([]byte, elemSz * a.cols)
 
 	for i := uint64(0); i < aRows; i++ {
                 if row >= a.rows[at] {
@@ -138,17 +139,20 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
                         row = 0
                 }
 
+		_, err := io.ReadFull(src, buf)
+		if err != nil {
+			panic("Randomness error")
+		}
+
 		for j := uint64(0); j < a.cols; j++ {
-			_, err := io.ReadFull(src, buf)
-			if err != nil {
-				panic("Randomness error")
-			}
+			start := j * elemSz
+			end := start + elemSz
 
 			switch T(0).Bitlen() {
 				case 32:
-					val = T(binary.LittleEndian.Uint32(buf))
+					val = T(binary.LittleEndian.Uint32(buf[start:end]))
 				case 64:
-					val = T(binary.LittleEndian.Uint64(buf))
+					val = T(binary.LittleEndian.Uint64(buf[start:end]))
                 		default:
                         		panic("Shouldn't get here")
         		}

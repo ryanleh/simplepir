@@ -99,23 +99,34 @@ func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSe
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
 	if mod == 0 {
-		buf := make([]byte, T(0).Bitlen() / 8)
-		for i := 0; i < len(out.data); i++ {
-			_, err := io.ReadFull(src, buf)
-      if err != nil {
-        panic("Randomness error")
-      }
+		length := rows * cols
+		if int(length) != len(out.data) {
+			panic("Should not happen")
+		}
+
+		elemSz := T(0).Bitlen() / 8
+		buf := make([]byte, elemSz * cols)
+		for i := uint64(0); i < length; i++ {
+			if i % cols == 0 {
+				_, err := io.ReadFull(src, buf)
+				if err != nil {
+					panic("Randomness error")
+				}
+			}
+
+			start := (i % cols) * elemSz
+			end := start + elemSz
 
 			switch T(0).Bitlen() {
-        case 32:
-				  out.data[i] = T(binary.LittleEndian.Uint32(buf))
-        case 64:
-					out.data[i] = T(binary.LittleEndian.Uint64(buf))
-        default:
-          panic("Shouldn't get here")
+				case 32:
+					out.data[i] = T(binary.LittleEndian.Uint32(buf[start:end]))
+			  	case 64:
+					out.data[i] = T(binary.LittleEndian.Uint64(buf[start:end]))
+			  	default:
+				  panic("Shouldn't get here")
 			}
-    }
-    return out
+		}
+		return out
 	}
 
 	m := big.NewInt(int64(mod))
