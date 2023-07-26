@@ -1,6 +1,8 @@
 package pir
 
 import (
+        "log"
+
         "github.com/henrycg/simplepir/rand"
         "github.com/henrycg/simplepir/matrix"
 )
