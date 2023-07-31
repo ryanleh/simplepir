@@ -131,6 +131,10 @@ func (c *Client[T]) GetP() uint64 {
 	return c.params.P
 }
 
+func (c *Client[T]) GetSecurityParam() uint64 {
+	return c.params.N
+}
+
 func (c *Client[T]) ClearHint() {
 	c.hint = nil
 }
