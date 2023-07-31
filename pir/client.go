@@ -130,3 +130,7 @@ func (c *Client[T]) GetL() uint64 {
 func (c *Client[T]) GetP() uint64 {
 	return c.params.P
 }
+
+func (c *Client[T]) ClearHint() {
+	c.hint = nil
+}
