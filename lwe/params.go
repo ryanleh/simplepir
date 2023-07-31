@@ -11,7 +11,7 @@ const secretDimension32 = uint64(1024)
 const lweErrorStdDev32 = float64(6.4)
 
 // For 64-bit ciphertext modulus
-const secretDimension64 = uint64(1408)
+const secretDimension64 = uint64(2048)
 const lweErrorStdDev64 = float64(81920.0)
 
 /* Maps #samples ==> plaintext modulus */

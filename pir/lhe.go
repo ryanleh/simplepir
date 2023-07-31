@@ -1,6 +1,8 @@
 package pir
 
 import (
+        "log"
+
         "github.com/henrycg/simplepir/rand"
         "github.com/henrycg/simplepir/matrix"
 )
@@ -28,9 +30,13 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 
 	//log.Printf("N=%v,  P=%v, L=%v, M=%v", c.dbinfo.Num, c.dbinfo.P(), c.dbinfo.L, c.dbinfo.M)
 
+  log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
 	s := &SecretLHE[T]{
-		secret: matrix.Gaussian[T](c.prg, c.params.N, 1),
+		secret: matrix.Rand[T](c.prg, c.params.N, 1, 3),
 	}
+
+  // Shift secrets to range [-1,1]
+  s.secret.SubConst(1)
 
   if c.hint != nil {
     s.interm = matrix.Mul(c.hint, s.secret)

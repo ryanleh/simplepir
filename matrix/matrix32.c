@@ -26,6 +26,28 @@ void matMulVec32(Elem32 *out, const Elem32 *a, const Elem32 *b,
   }
 }
 
+void randMatMul32(Elem32* out, const uint8_t *a, const Elem32 *b,
+    size_t aRows, size_t aCols, size_t bCols)
+{
+  Elem32 val;
+  Elem64 start = 0;
+
+  for (size_t i = 0; i < aRows; i++) {
+    for (size_t j = 0; j < aCols; j++) {
+      val = ((Elem32)a[start+0]) |
+	    (((Elem32)a[start+1]) << 8) |
+	    (((Elem32)a[start+2]) << 16) |
+	    (((Elem32)a[start+3]) << 24);
+
+      start += 4;
+
+      for (size_t k = 0; k < bCols; k++) {
+        out[bCols*i + k] += val * b[bCols*j + k];
+      }
+    }
+  }
+}
+
 void matMulVecPacked32(Elem32 *out, const Elem32 *a, const Elem32 *b,
     size_t aRows, size_t aCols)
 {
