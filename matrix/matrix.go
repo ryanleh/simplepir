@@ -138,6 +138,13 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 	return out
 }
 
+// Elements in range [-1, 1]
+func Ternary[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
+	out := Rand[T](src, rows, cols, 3)
+	out.SubConst(1)
+	return out
+}
+
 func Zeros[T Elem](rows uint64, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
 	for i := 0; i < len(out.data); i++ {
