@@ -265,7 +265,7 @@ func (m *Matrix[T]) Make64() *Matrix[Elem64] {
 	}
 
 	for i, val := range m.data {
-		out.data[i] = Elem64(val)
+		out.data[i] = Elem64(int(val))
 	}
 
 	return out
@@ -279,7 +279,7 @@ func (m *Matrix[T]) Make32() *Matrix[Elem32] {
 	}
 
 	for i, val := range m.data {
-		out.data[i] = Elem32(val)
+		out.data[i] = Elem32(int(val))
 	}
 
 	return out
