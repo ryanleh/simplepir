@@ -1,6 +1,10 @@
 package pir
 
 import (
+	"log"
+)
+
+import (
 	"github.com/henrycg/simplepir/lwe"
 	"github.com/henrycg/simplepir/rand"
 	"github.com/henrycg/simplepir/matrix"
@@ -32,19 +36,32 @@ func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []
 		matrixArows: matrixArows,   // Warning: not copied
 	}
 
-  if hint != nil {
+  	if hint != nil {
 		c.hint = hint.Copy()
-  }
+  	}
 
-  return c
+  	return c
+}
+
+func (c *Client[T]) GenerateSecret() *matrix.Matrix[T] {
+        log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
+        return matrix.Ternary[T](c.prg, c.params.N, 1)
 }
 
 func (c *Client[T]) PreprocessQuery() *Secret[T] {
+	inSecret := c.GenerateSecret()
+	return c.PreprocessQueryGivenSecret(inSecret)
+}
+
+func (c *Client[T]) PreprocessQueryGivenSecret(inSecret *matrix.Matrix[T]) *Secret[T] {
 	s := &Secret[T]{
-		secret: matrix.Gaussian[T](c.prg, c.params.N, 1),
+		secret: inSecret,
 	}
 
-	s.interm = matrix.Mul(c.hint, s.secret)
+	// Compute H * s
+	if c.hint != nil {
+		s.interm = matrix.Mul(c.hint, s.secret)
+	}
 
 	src := make([]matrix.IoRandSource, len(c.matrixAseeds))
 	for i, seed := range c.matrixAseeds {
@@ -54,6 +71,7 @@ func (c *Client[T]) PreprocessQuery() *Secret[T] {
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
+	// Compure A * s + e
 	query := matrix.MulSeededLeft(matrixAseeded, s.secret)
 	query.Add(err)
 
@@ -70,7 +88,7 @@ func (c *Client[T]) PreprocessQuery() *Secret[T] {
 func (c *Client[T]) QueryPreprocessed(i uint64, s *Secret[T]) *Query[T] {
 	s.index = i
 	s.query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
-	return &Query[T]{ s.query.Copy() }
+	return &Query[T]{ s.query }
 }
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
@@ -79,27 +97,33 @@ func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
 	return s, q
 }
 
-func (c *Client[T]) Recover(secret *Secret[T], ans *Answer[T]) uint64 {
-	row := secret.index / c.dbinfo.M
-	ans.Answer.Sub(secret.interm)
-
+func (c *Client[T]) Decode(ans *matrix.Matrix[T], index uint64) uint64 {
 	var vals []uint64
+	row := index / c.dbinfo.M
+
 	// Recover each Z_p element that makes up the desired database entry
 	for j := row * c.dbinfo.Ne; j < (row+1)*c.dbinfo.Ne; j++ {
-		noised := uint64(ans.Answer.Get(j, 0))
+		noised := uint64(ans.Get(j, 0))
 		denoised := c.params.Round(noised)
 		vals = append(vals, denoised)
 		//log.Printf("Reconstructing row %d: %d\n", j, denoised)
 	}
-	ans.Answer.Add(secret.interm)
 
-	return c.dbinfo.ReconstructElem(vals, secret.index)
+	return c.dbinfo.ReconstructElem(vals, index)
 }
 
-func (c *Client[T]) RecoverMany(secret *Secret[T], ansIn *Answer[T]) []uint64 {
-	ans := ansIn.Answer.Copy()
-	ans.Sub(secret.interm)
+func (c *Client[T]) Recover(s *Secret[T], ansIn *Answer[T]) uint64 {
+	if s.interm == nil {
+		s.interm = matrix.Mul(c.hint, s.secret)
+	}
 
+	ans := ansIn.Answer.Copy()
+	ans.Sub(s.interm)
+
+	return c.Decode(ans, s.index)
+}
+
+func (c *Client[T]) DecodeMany(ans *matrix.Matrix[T]) []uint64 {
 	num_values := (ans.Rows() / c.dbinfo.Ne)
 	out := make([]uint64, num_values)
 	for row := uint64(0); row < ans.Rows(); row += c.dbinfo.Ne {
@@ -118,6 +142,16 @@ func (c *Client[T]) RecoverMany(secret *Secret[T], ansIn *Answer[T]) []uint64 {
 	return out
 }
 
+func (c *Client[T]) RecoverMany(s *Secret[T], ansIn *Answer[T]) []uint64 {
+	if s.interm == nil {
+		s.interm = matrix.Mul(c.hint, s.secret)
+	}
+
+	ans := ansIn.Answer.Copy()
+	ans.Sub(s.interm)
+
+	return c.DecodeMany(ans)
+}
 
 func (c *Client[T]) GetM() uint64 {
 	return c.dbinfo.M

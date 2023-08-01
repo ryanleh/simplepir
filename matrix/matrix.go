@@ -257,3 +257,30 @@ func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	return out
 }
 
+func (m *Matrix[T]) Make64() *Matrix[Elem64] {
+	out := &Matrix[Elem64]{
+		rows: m.rows,
+		cols: m.cols,
+		data: make([]Elem64, len(m.data)),
+	}
+
+	for i, val := range m.data {
+		out.data[i] = Elem64(val)
+	}
+
+	return out
+}
+
+func (m *Matrix[T]) Make32() *Matrix[Elem32] {
+	out := &Matrix[Elem32]{
+		rows: m.rows,
+		cols: m.cols,
+		data: make([]Elem32, len(m.data)),
+	}
+
+	for i, val := range m.data {
+		out.data[i] = Elem32(val)
+	}
+
+	return out
+}

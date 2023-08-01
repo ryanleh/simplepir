@@ -1,8 +1,6 @@
 package pir
 
 import (
-        "log"
-
         "github.com/henrycg/simplepir/rand"
         "github.com/henrycg/simplepir/matrix"
 )
@@ -14,11 +12,12 @@ type SecretLHE[T matrix.Elem] struct {
 	arr    *matrix.Matrix[T]
 }
 
-func (s *SecretLHE[T]) AsMatrix() *matrix.Matrix[T] {
-  return s.secret
+func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
+	inSecret := c.GenerateSecret()
+	return c.PreprocessQueryLHEGivenSecret(inSecret)
 }
 
-func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
+func (c *Client[T]) PreprocessQueryLHEGivenSecret(inSecret *matrix.Matrix[T]) *SecretLHE[T] {
 	if (c.dbinfo.Ne != 1) || ((1 << c.dbinfo.RowLength) > c.params.P) {
 		panic("Not yet supported.")
 	}
@@ -28,28 +27,24 @@ func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 		panic("LHE requires p | q.")
 	}
 
-	//log.Printf("N=%v,  P=%v, L=%v, M=%v", c.dbinfo.Num, c.dbinfo.P(), c.dbinfo.L, c.dbinfo.M)
-
-  log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
 	s := &SecretLHE[T]{
-		secret: matrix.Rand[T](c.prg, c.params.N, 1, 3),
+		secret: inSecret,
 	}
 
-  // Shift secrets to range [-1,1]
-  s.secret.SubConst(1)
+	// Compute H * s
+  	if c.hint != nil {
+    		s.interm = matrix.Mul(c.hint, s.secret)
+  	}
 
-  if c.hint != nil {
-    s.interm = matrix.Mul(c.hint, s.secret)
-  }
-
-  src := make([]matrix.IoRandSource, len(c.matrixAseeds))
-  for i, seed := range c.matrixAseeds {
-          src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
-  }
-  matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
+  	src := make([]matrix.IoRandSource, len(c.matrixAseeds))
+  	for i, seed := range c.matrixAseeds {
+        	  src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
+  	}
+  	matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
+	// Compute A * s + e
 	query := matrix.MulSeededLeft(matrixAseeded, s.secret)
 	query.Add(err)
 
@@ -72,10 +67,10 @@ func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T
 
 	s.arr = arr
 	arr.MulConst(T(c.params.Delta))
-  arr.AppendZeros(s.query.Rows() - arrIn.Rows())
+	arr.AppendZeros(s.query.Rows() - arrIn.Rows())
 	s.query.Add(arr)
 
-	return &Query[T] { s.query.Copy() }
+	return &Query[T] { s.query }
 }
 
 func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T]) {
@@ -97,13 +92,17 @@ func (c *Client[T]) DecodeManyLHE(ans *matrix.Matrix[T]) *matrix.Matrix[T] {
 	return out
 }
 
-func (c *Client[T]) RecoverManyLHE(secret *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
+func (c *Client[T]) RecoverManyLHE(s *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
 	if (c.dbinfo.Ne != 1) {
 		panic("Not yet supported")
 	}
   
-	ans := ansIn.Answer.Copy()
-	ans.Sub(secret.interm)
+	if s.interm == nil {
+    		s.interm = matrix.Mul(c.hint, s.secret)
+	}
 
-  return c.DecodeManyLHE(ans)
+	ans := ansIn.Answer.Copy()
+	ans.Sub(s.interm)
+
+	return c.DecodeManyLHE(ans)
 }
