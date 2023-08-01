@@ -6,8 +6,10 @@ import (
   "fmt"
 )
 
+// NOTE: These parameters were chosen to support ternary secrets
+
 // For 32-bit ciphertext modulus
-const secretDimension32 = uint64(1024)
+const secretDimension32 = uint64(1408)
 const lweErrorStdDev32 = float64(6.4)
 
 // For 64-bit ciphertext modulus
@@ -24,7 +26,6 @@ var plaintextModulus32 = map[uint64]uint64{
 	1 << 18: 416,
 	1 << 19: 350,
 	1 << 20: 294,
-	1 << 21: 247,
 }
 
 /* Maps #samples ==> plaintext modulus */
@@ -38,12 +39,12 @@ var plaintextModulus64 = map[uint64]uint64{
 	1 << 19: 203101,
 	1 << 20: 170787,
 	1 << 21: 143614,
-	1 << 22: 120764,
-	1 << 23: 101550,
-	1 << 24: 85393,
-	1 << 25: 71807,
-	1 << 26: 60382,
-	1 << 27: 50775,
+	//1 << 22: 120764,
+	//1 << 23: 101550,
+	//1 << 24: 85393,
+	//1 << 25: 71807,
+	//1 << 26: 60382,
+	//1 << 27: 50775,
 }
 
 type Params struct {
