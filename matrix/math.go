@@ -128,24 +128,36 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	curRows := uint64(0)
 	bPtr := unsafe.Pointer(&b.data[0])
 
-	for i, arows := range a.rows {
-		buf := make([]byte, elemSz * a.cols * arows)
-		bufPtr := unsafe.Pointer(&buf[0])
-		outPtr := unsafe.Pointer(&out.data[curRows * out.cols])
-		curRows += arows
+	ch := make(chan bool)
+	for i, _ := range a.rows {
+		go func(it int, curRowsIn uint64) {
+			buf := make([]byte, elemSz * a.cols * a.rows[it])
+			bufPtr := unsafe.Pointer(&buf[0])
+			outPtr := unsafe.Pointer(&out.data[curRowsIn * b.cols])
 
-		_, err := io.ReadFull(a.src[i], buf)
-		if err != nil {
-			panic("Randomness error")
-		}
+			_, err := io.ReadFull(a.src[it], buf)
+			if err != nil {
+				panic("Randomness error")
+			}
 
-		switch T(0).Bitlen(){
-			case 32:
-				C.randMatMul32((*Elem32)(outPtr), (*C.uint8_t)(bufPtr), (*Elem32)(bPtr), C.size_t(arows), C.size_t(a.cols), C.size_t(b.cols))
-			case 64:
-				C.randMatMul64((*Elem64)(outPtr), (*C.uint8_t)(bufPtr), (*Elem64)(bPtr), C.size_t(arows), C.size_t(a.cols), C.size_t(b.cols))
-			default:
-				panic("Shouldn't get here")
+			switch T(0).Bitlen(){
+				case 32:
+					C.randMatMul32((*Elem32)(outPtr), (*C.uint8_t)(bufPtr), (*Elem32)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
+				case 64:
+					C.randMatMul64((*Elem64)(outPtr), (*C.uint8_t)(bufPtr), (*Elem64)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
+				default:
+					panic("Shouldn't get here")
+			}
+
+			ch <- true
+		} (i, curRows)
+		curRows += a.rows[i]
+	}
+
+	for i := 0; i < len(a.rows); i++ {
+		b := <- ch
+		if !b {
+			panic("Should not happen")
 		}
 	}
 
