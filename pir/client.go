@@ -1,10 +1,6 @@
 package pir
 
 import (
-	"log"
-)
-
-import (
 	"github.com/henrycg/simplepir/lwe"
 	"github.com/henrycg/simplepir/rand"
 	"github.com/henrycg/simplepir/matrix"
@@ -44,7 +40,7 @@ func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []
 }
 
 func (c *Client[T]) GenerateSecret() *matrix.Matrix[T] {
-        log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
+        //log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
         return matrix.Ternary[T](c.prg, c.params.N, 1)
 }
 
