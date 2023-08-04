@@ -35,4 +35,3 @@ func (q *Query[T]) SelectRows(start, num, squishing uint64) *Query[T] {
 
 	return res
 }
-

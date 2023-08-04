@@ -12,6 +12,10 @@ type SecretLHE[T matrix.Elem] struct {
 	arr    *matrix.Matrix[T]
 }
 
+func (s *SecretLHE[T]) Secret() *matrix.Matrix[T] {
+	return s.secret
+}
+
 func (c *Client[T]) PreprocessQueryLHE() *SecretLHE[T] {
 	inSecret := c.GenerateSecret()
 	return c.PreprocessQueryLHEGivenSecret(inSecret)

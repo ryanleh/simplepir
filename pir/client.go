@@ -39,6 +39,10 @@ func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []
   	return c
 }
 
+func (c *Client[T]) Hint() *matrix.Matrix[T] {
+	return c.hint
+}
+
 func (c *Client[T]) GenerateSecret() *matrix.Matrix[T] {
         //log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
         return matrix.Ternary[T](c.prg, c.params.N, 1)
