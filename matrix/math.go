@@ -239,3 +239,8 @@ func (m *Matrix[T]) ReduceMod(p uint64) {
 	}
 }
 
+func (m *Matrix[T]) ShiftDown(n int) {
+	for i := 0; i <len(m.data); i++ {
+		m.data[i] = (m.data[i] >> n)
+	}
+}
