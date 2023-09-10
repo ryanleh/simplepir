@@ -1,7 +1,6 @@
 package pir
 
 import (
-        "github.com/henrycg/simplepir/rand"
         "github.com/henrycg/simplepir/matrix"
 )
 
@@ -31,35 +30,14 @@ func (c *Client[T]) PreprocessQueryLHEGivenSecret(inSecret *matrix.Matrix[T]) *S
 		panic("LHE requires p | q.")
 	}
 
-	s := &SecretLHE[T]{
-		secret: inSecret,
-	}
+  s := c.PreprocessQueryGivenSecret(inSecret)
 
-	// Compute H * s
-  	if c.hint != nil {
-    		s.interm = matrix.Mul(c.hint, s.secret)
-  	}
-
-  	src := make([]matrix.IoRandSource, len(c.matrixAseeds))
-  	for i, seed := range c.matrixAseeds {
-        	  src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
-  	}
-  	matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
-
-	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
-
-	// Compute A * s + e
-	query := matrix.MulSeededLeft(matrixAseeded, s.secret)
-	query.Add(err)
-
-	// Pad the query to match the dimensions of the compressed DB
-	if c.dbinfo.M%c.dbinfo.Squishing != 0 {
-		query.AppendZeros(c.dbinfo.Squishing - (c.dbinfo.M % c.dbinfo.Squishing))
-	}
-
-	s.query = query 
-
-	return s
+  return &SecretLHE[T]{
+    query: s.query,
+    secret: s.secret,
+    interm: s.interm,
+    arr: nil,
+  }
 }
 
 func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T]) *Query[T] {
