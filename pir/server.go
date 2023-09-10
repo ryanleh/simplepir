@@ -43,6 +43,10 @@ func (s *Server[T]) Hint() *matrix.Matrix[T] {
 	return s.hint
 }
 
+func (s *Server[T]) DropHint() {
+	s.hint = nil
+}
+
 func (s *Server[T]) MatrixA() *rand.PRGKey {
 	return s.matrixAseed
 }
