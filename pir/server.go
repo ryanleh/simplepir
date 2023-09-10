@@ -44,7 +44,7 @@ func (s *Server[T]) Hint() *matrix.Matrix[T] {
 }
 
 func (s *Server[T]) DropHint() {
-	s.hint = nil
+	s.hint = &matrix.Matrix[T]{}
 }
 
 func (s *Server[T]) MatrixA() *rand.PRGKey {
