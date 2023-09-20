@@ -138,10 +138,10 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 	return out
 }
 
-// Elements in range [-1, 1]
+// Elements in range [0, 1, 2]
 func Ternary[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
 	out := Rand[T](src, rows, cols, 3)
-	out.SubConst(1)
+	//out.SubConst(1)
 	return out
 }
 
