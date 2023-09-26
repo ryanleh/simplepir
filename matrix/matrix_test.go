@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"testing"
 
- 	"github.com/henrycg/simplepir/rand"
+ 	"github.com/ryanleh/simplepir/rand"
 )
 
 func testGob[U Elem](t *testing.T) {

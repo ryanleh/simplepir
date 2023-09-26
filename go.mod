@@ -1,3 +1,3 @@
-module github.com/henrycg/simplepir
+module github.com/ryanleh/simplepir
 
 go 1.18

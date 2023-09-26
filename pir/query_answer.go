@@ -5,7 +5,7 @@ import (
 )
 
 import (
-	"github.com/henrycg/simplepir/matrix"
+	"github.com/ryanleh/simplepir/matrix"
 )
 
 

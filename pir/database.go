@@ -6,9 +6,9 @@ import (
 )
 
 import (
-  "github.com/henrycg/simplepir/lwe"
-  "github.com/henrycg/simplepir/rand"
-  "github.com/henrycg/simplepir/matrix"
+  "github.com/ryanleh/simplepir/lwe"
+  "github.com/ryanleh/simplepir/rand"
+  "github.com/ryanleh/simplepir/matrix"
 )
 
 type DBInfo struct {

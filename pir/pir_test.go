@@ -7,8 +7,8 @@ import (
 	//"log"
 	"testing"
 
-	"github.com/henrycg/simplepir/matrix"
-	"github.com/henrycg/simplepir/rand"
+	"github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/rand"
 )
 
 const SEC_PARAM = uint64(1 << 10)

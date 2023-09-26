@@ -4,9 +4,9 @@ import (
 	"testing"
 	"fmt"
 
-	"github.com/henrycg/simplepir/matrix"
-	"github.com/henrycg/simplepir/lwe"
-	"github.com/henrycg/simplepir/rand"
+	"github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/lwe"
+	"github.com/ryanleh/simplepir/rand"
 )
 
 func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], db *Database[T], arr *matrix.Matrix[T]) {

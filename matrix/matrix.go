@@ -12,7 +12,7 @@ import (
 	"math/big"
 	mrand "math/rand"
 
- 	"github.com/henrycg/simplepir/lwe"
+ 	"github.com/ryanleh/simplepir/lwe"
 )
 
 type Elem32 = C.Elem32

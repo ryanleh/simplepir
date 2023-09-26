@@ -1,7 +1,7 @@
 package pir
 
 import (
-        "github.com/henrycg/simplepir/matrix"
+        "github.com/ryanleh/simplepir/matrix"
 )
 
 type SecretLHE[T matrix.Elem] struct {

@@ -3,7 +3,7 @@ package pir
 import (
   "testing"
 
-	"github.com/henrycg/simplepir/matrix"
+	"github.com/ryanleh/simplepir/matrix"
 )
 
 func testDBInit[T matrix.Elem](t *testing.T, N uint64, d uint64, vals []uint64) *Database[T] {
