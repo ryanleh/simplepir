@@ -1,7 +1,6 @@
 package pir
 
 import (
-  "log"
   "math"
 )
 
@@ -157,8 +156,8 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 		Info.X += 1
 	}
 
-	log.Printf("Total packed db size is ~%f MB\n",
-		float64(Info.L*Info.M)*math.Log2(float64(Info.P()))/(1024.0*1024.0*8.0))
+	//log.Printf("Total packed db size is ~%f MB\n",
+	//	float64(Info.L*Info.M)*math.Log2(float64(Info.P()))/(1024.0*1024.0*8.0))
 
 	if dbElems > Info.L*Info.M {
 		panic("lwe.Params and database size don't match")
@@ -226,12 +225,12 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 	return db
 }
 
-func NewDatabase[T matrix.Elem](num, rowLength uint64, vals []uint64) *Database[T] {
+func NewDatabase[T matrix.Elem](num, rowLength uint64, vals []T) *Database[T] {
 	info := NewDBInfo(T(0).Bitlen(), num, rowLength)
 	return NewDatabaseFixedParams[T](num, rowLength, vals, info.Params)
 }
 
-func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64, params *lwe.Params) *Database[T] {
+func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []T, params *lwe.Params) *Database[T] {
 	db := new(Database[T])
 	db.Info = NewDBInfoFixedParams(Num, rowLength, params, true)
 	db.Data = matrix.Zeros[T](db.Info.L, db.Info.M)
@@ -245,7 +244,7 @@ func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []uint64,
     for j := uint64(0); j < db.Info.Ne; j++ {
       db.Data.Set((uint64(i)/db.Info.M)*db.Info.Ne+j,
         uint64(i)%db.Info.M,
-        T(Base_p(db.Info.P(), elem, j)))
+        Base_p(T(db.Info.P()), elem, j))
     }
   }
 

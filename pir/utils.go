@@ -2,8 +2,10 @@ package pir
 
 import "math"
 
+import "github.com/ryanleh/simplepir/matrix"
+
 // Returns the i-th elem in the representation of m in base p.
-func Base_p(p, m, i uint64) uint64 {
+func Base_p[T matrix.Elem](p T, m T, i uint64) T {
 	for j := uint64(0); j < i; j++ {
 		m = m / p
 	}
