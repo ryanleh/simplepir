@@ -95,6 +95,10 @@ func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSe
 	return out
 }
 
+func NewFromRaw[T Elem](data []T, rows uint64, cols uint64) *Matrix[T] {
+    return &Matrix[T]{rows, cols, data}
+}
+
 // If mod is 0, then generate uniform random int of type T
 func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matrix[T] {
 	out := New[T](rows, cols)
