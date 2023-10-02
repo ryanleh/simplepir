@@ -80,6 +80,7 @@ func (m *Matrix[T]) AppendZeros(n uint64) {
 }
 
 func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
+  //log.Printf("%v %v", rows, cols)
 	out := new(Matrix[T])
 	out.rows = rows
 	out.cols = cols

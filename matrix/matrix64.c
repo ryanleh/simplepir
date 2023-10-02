@@ -118,23 +118,6 @@ void matMulVecPacked64(Elem64 *out, const Elem64 *a, const Elem64 *b,
       tmp8 += val8*b[index2];
       index2 += 1;
 
-      val  = (db >> BASIS2_64) & MASK_64;
-      val2 = (db2 >> BASIS2_64) & MASK_64;
-      val3 = (db3 >> BASIS2_64) & MASK_64;
-      val4 = (db4 >> BASIS2_64) & MASK_64;
-      val5 = (db5 >> BASIS2_64) & MASK_64;
-      val6 = (db6 >> BASIS2_64) & MASK_64;
-      val7 = (db7 >> BASIS2_64) & MASK_64;
-      val8 = (db8 >> BASIS2_64) & MASK_64;
-      tmp  += val*b[index2];
-      tmp2 += val2*b[index2];
-      tmp3 += val3*b[index2];
-      tmp4 += val4*b[index2];
-      tmp5 += val5*b[index2];
-      tmp6 += val6*b[index2];
-      tmp7 += val7*b[index2];
-      tmp8 += val8*b[index2];
-      index2 += 1;
       index += 1;
     }
     out[i]   += tmp;

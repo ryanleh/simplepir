@@ -23,6 +23,7 @@ func NewServerSeed[T matrix.Elem](db *Database[T], seed *rand.PRGKey) *Server[T]
 }
 
 func setupServer[T matrix.Elem](db *Database[T], matrixAseed *rand.PRGKey) *Server[T] {
+
 	src := rand.NewBufPRG(rand.NewPRG(matrixAseed))
   matrixA := matrix.Rand[T](src, db.Info.M, db.Info.Params.N, 0)
 

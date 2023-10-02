@@ -220,13 +220,13 @@ func TestSimplePir32(t *testing.T) {
 	testSimplePir[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
 }
 
-//func TestSimplePirSmall64(t *testing.T) {
-//	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(3), 34)
-//}
+func TestSimplePirSmall64(t *testing.T) {
+	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(3), 34)
+}
 
 
 func TestSimplePir64(t *testing.T) {
-	testSimplePir[matrix.Elem64](t, uint64(1<<20), uint64(12), 262144)
+	testSimplePir[matrix.Elem64](t, uint64(1<<20), uint64(6), 100)
 }
 
 func TestSimplePirMany32(t *testing.T) {

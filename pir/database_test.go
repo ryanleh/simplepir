@@ -59,15 +59,15 @@ func TestDBSmallEntries64(t *testing.T) {
 // Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
 func testDBLargeEntries[T matrix.Elem](t *testing.T) {
 	vals := []T{1, 2, 3, 4}
-	db := testDBInit[T](t, uint64(4), uint64(21), vals)
+	db := testDBInit[T](t, uint64(4), uint64(40), vals)
 
 	if db.Info.Ne <= 1 {
-		t.Fatal()
+		t.Fatalf("Got %d entries", db.Info.Ne)
 	}
 }
 
 func TestDBLargeEntries32(t *testing.T) {
-  testDBLargeEntries[matrix.Elem64](t)
+  testDBLargeEntries[matrix.Elem32](t)
 }
 
 func TestDBLargeEntries64(t *testing.T) {

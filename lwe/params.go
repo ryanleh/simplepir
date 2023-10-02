@@ -13,8 +13,8 @@ const secretDimension32 = uint64(1408)
 const lweErrorStdDev32 = float64(6.4)
 
 // For 64-bit ciphertext modulus
-const secretDimension64 = uint64(2048)
-const lweErrorStdDev64 = float64(81920.0)
+const secretDimension64 = uint64(4096)
+const lweErrorStdDev64 = float64(5.0)
 
 /* Maps #samples ==> plaintext modulus */
 var plaintextModulus32 = map[uint64]uint64{
@@ -30,21 +30,11 @@ var plaintextModulus32 = map[uint64]uint64{
 
 /* Maps #samples ==> plaintext modulus */
 var plaintextModulus64 = map[uint64]uint64{
-	1 << 13: 574457,
-	1 << 14: 483058,
-	1 << 15: 406202,
-	1 << 16: 341574,
-	1 << 17: 287228,
-	1 << 18: 241529,
-	1 << 19: 203101,
-	1 << 20: 170787,
-	1 << 21: 143614,
-	//1 << 22: 120764,
-	//1 << 23: 101550,
-	//1 << 24: 85393,
-	//1 << 25: 71807,
-	//1 << 26: 60382,
-	//1 << 27: 50775,
+	1 << 13: 95640378,
+	1 << 14: 95640378,
+	1 << 15: 95640378,
+	1 << 16: 95640378,
+	1 << 17: 95640378,
 }
 
 type Params struct {

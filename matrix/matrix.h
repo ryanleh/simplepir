@@ -7,9 +7,8 @@
 #define BASIS2_32      BASIS_32*2
 #define MASK_32        (1<<BASIS_32)-1
 
-#define COMPRESSION_64 3
-#define BASIS_64       20
-#define BASIS2_64      BASIS_64*2
+#define COMPRESSION_64 2
+#define BASIS_64       30
 #define MASK_64        (1<<BASIS_64)-1
 
 typedef uint32_t Elem32;
