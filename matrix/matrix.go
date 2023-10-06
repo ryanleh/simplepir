@@ -12,7 +12,7 @@ import (
 	"math/big"
 	mrand "math/rand"
 
- 	"github.com/ryanleh/simplepir/lwe"
+	"github.com/ryanleh/simplepir/lwe"
 )
 
 type Elem32 = C.Elem32
@@ -60,7 +60,7 @@ func (m *Matrix[T]) Copy() *Matrix[T] {
 }
 
 func (m *Matrix[T]) Data() []T {
-  return m.data
+	return m.data
 }
 
 func (m *Matrix[T]) Rows() uint64 {
@@ -80,7 +80,7 @@ func (m *Matrix[T]) AppendZeros(n uint64) {
 }
 
 func New[T Elem](rows uint64, cols uint64) *Matrix[T] {
-  //log.Printf("%v %v", rows, cols)
+	//log.Printf("%v %v", rows, cols)
 	out := new(Matrix[T])
 	out.rows = rows
 	out.cols = cols
@@ -97,7 +97,7 @@ func NewSeeded[T Elem](src []IoRandSource, rows []uint64, cols uint64) *MatrixSe
 }
 
 func NewFromRaw[T Elem](data []T, rows uint64, cols uint64) *Matrix[T] {
-    return &Matrix[T]{rows, cols, data}
+	return &Matrix[T]{rows, cols, data}
 }
 
 // If mod is 0, then generate uniform random int of type T
@@ -110,7 +110,7 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 		}
 
 		elemSz := T(0).Bitlen() / 8
-		buf := make([]byte, elemSz * length)
+		buf := make([]byte, elemSz*length)
 		_, err := io.ReadFull(src, buf)
 		if err != nil {
 			panic("Randomness error")
@@ -121,12 +121,12 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 			end := start + elemSz
 
 			switch T(0).Bitlen() {
-				case 32:
-					out.data[i] = T(binary.LittleEndian.Uint32(buf[start:end]))
-			  	case 64:
-					out.data[i] = T(binary.LittleEndian.Uint64(buf[start:end]))
-			  	default:
-				  panic("Shouldn't get here")
+			case 32:
+				out.data[i] = T(binary.LittleEndian.Uint32(buf[start:end]))
+			case 64:
+				out.data[i] = T(binary.LittleEndian.Uint64(buf[start:end]))
+			default:
+				panic("Shouldn't get here")
 			}
 		}
 		return out
@@ -177,7 +177,6 @@ func (m *Matrix[T]) Set(i, j uint64, val T) {
 	}
 	m.data[i*m.cols+j] = T(val)
 }
-
 
 func (a *Matrix[T]) Concat(b *Matrix[T]) {
 	if a.cols == 0 && a.rows == 0 {
@@ -248,12 +247,12 @@ func Gaussian[T Elem](src IoRandSource, rows, cols uint64) *Matrix[T] {
 	out := New[T](rows, cols)
 	samplef := lwe.GaussSample32
 	switch T(0).Bitlen() {
-		case 32:
-			// Do nothing
-		case 64:
-			samplef = lwe.GaussSample64
-		default:
-			panic("Shouldn't get here")
+	case 32:
+		// Do nothing
+	case 64:
+		samplef = lwe.GaussSample64
+	default:
+		panic("Shouldn't get here")
 	}
 
 	for i := 0; i < len(out.data); i++ {

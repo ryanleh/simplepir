@@ -43,9 +43,9 @@ func (r *BufPRGReader) MathRand() *mrand.Rand {
 // it makes tons of system calls to generate a small number of
 // pseudo-random bytes.
 type PRGReader struct {
-	Key    PRGKey
-	ctr    uint64
-	block  cipher.Block
+	Key   PRGKey
+	ctr   uint64
+	block cipher.Block
 }
 
 type BufPRGReader struct {
@@ -83,19 +83,19 @@ func RandomPRG() *PRGReader {
 }
 
 func (s *PRGReader) Read(p []byte) (int, error) {
-  var buf [aes.BlockSize]byte
+	var buf [aes.BlockSize]byte
 
-  for done := 0; done < len(p); done += aes.BlockSize {
-    s.ctr += 1
-    binary.BigEndian.PutUint64(buf[:], s.ctr)
+	for done := 0; done < len(p); done += aes.BlockSize {
+		s.ctr += 1
+		binary.BigEndian.PutUint64(buf[:], s.ctr)
 
-    if len(p[done:]) >= aes.BlockSize {
-      s.block.Encrypt(p[done:], buf[:])
-    } else {
-      s.block.Encrypt(buf[:], buf[:])
-      copy(p[done:], buf[:])
-    }
-  }
+		if len(p[done:]) >= aes.BlockSize {
+			s.block.Encrypt(p[done:], buf[:])
+		} else {
+			s.block.Encrypt(buf[:], buf[:])
+			copy(p[done:], buf[:])
+		}
+	}
 
 	return len(p), nil
 }

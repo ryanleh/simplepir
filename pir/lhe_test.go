@@ -1,11 +1,11 @@
 package pir
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 
-	"github.com/ryanleh/simplepir/matrix"
 	"github.com/ryanleh/simplepir/lwe"
+	"github.com/ryanleh/simplepir/matrix"
 	"github.com/ryanleh/simplepir/rand"
 )
 
@@ -16,7 +16,7 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 	answer := server.Answer(query)
 
 	vals := client.RecoverManyLHE(secret, answer)
-  
+
 	shouldBe := matrix.Mul(db.Data, arr)
 	shouldBe.ModConst(T(db.Info.P()))
 
@@ -31,7 +31,7 @@ func runLHE[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T], d
 
 		if should_be != uint64(vals.Get(i, 0)) {
 			fmt.Printf("Row %d: Got %d instead of %d (mod %d) -- %d\n",
-			            i, uint64(vals.Get(i, 0)), should_be, db.Info.P(), shouldBe.Get(i, 0))
+				i, uint64(vals.Get(i, 0)), should_be, db.Info.P(), shouldBe.Get(i, 0))
 			t.Fail()
 		}
 	}
@@ -47,15 +47,13 @@ func testLHE[T matrix.Elem](t *testing.T, N uint64, d uint64) {
 	prg := rand.NewRandomBufPRG()
 	params := lwe.NewParamsFixedP(T(0).Bitlen(), N, 512)
 	db := NewDatabaseRandomFixedParams[T](prg, N, d, params)
-  	arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
+	arr := matrix.Rand[T](prg, db.Info.M, 1, params.P)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
 	runLHE(t, client, server, db, arr)
 }
-
-
 
 func TestLHE32(t *testing.T) {
 	testLHE[matrix.Elem32](t, uint64(1<<7)+3, uint64(9))
@@ -88,4 +86,3 @@ func TestLHEBigDB32(t *testing.T) {
 func TestLHEBigDB64(t *testing.T) {
 	testLHE[matrix.Elem64](t, uint64(1<<14), uint64(9))
 }
-

@@ -149,8 +149,8 @@ func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T
 	vals := client.RecoverMany(secret, answer)
 
 	col_index := i % db.Info.M
-  //log.Printf("Rowlen: %v Ne: %v\n", len(vals), db.Info.Ne)
-  //log.Printf("vals: %v \n", vals)
+	//log.Printf("Rowlen: %v Ne: %v\n", len(vals), db.Info.Ne)
+	//log.Printf("vals: %v \n", vals)
 	for row := uint64(0); row < uint64(len(vals)); row++ {
 		index := row*db.Info.M + col_index
 		if db.GetElem(index) != vals[row] {
@@ -160,19 +160,18 @@ func runPIRmany[T matrix.Elem](t *testing.T, client *Client[T], server *Server[T
 	}
 }
 
-
 func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
 	db := NewDatabaseRandom[T](prg, N, d)
-  //for i := uint64(0); i<db.Data.Rows(); i++ {
-  //  for j := uint64(0); j<db.Data.Cols(); j++ {
-  //    db.Data.Set(i,j,T(0))//-T(db.Info.P()/2))
-  //  }
-    //db.Data.Set(i,i,T(0000))
-  //}
-  //db.Data.AddConst(T(db.Info.P()/2))
-  //db.Data.Print()
-  //log.Printf("===%v", db.Data.Get(0,0))
+	//for i := uint64(0); i<db.Data.Rows(); i++ {
+	//  for j := uint64(0); j<db.Data.Cols(); j++ {
+	//    db.Data.Set(i,j,T(0))//-T(db.Info.P()/2))
+	//  }
+	//db.Data.Set(i,i,T(0000))
+	//}
+	//db.Data.AddConst(T(db.Info.P()/2))
+	//db.Data.Print()
+	//log.Printf("===%v", db.Data.Get(0,0))
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
@@ -183,14 +182,13 @@ func testSimplePir[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64
 func testSimplePirMany[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
 	db := NewDatabaseRandom[T](prg, N, d)
-  //log.Printf("packing: %v", db.Info.Packing)
+	//log.Printf("packing: %v", db.Info.Packing)
 
 	server := NewServer(db)
 	client := NewClient(server.Hint(), server.MatrixA(), db.Info)
 
 	runPIRmany(t, client, server, db, index)
 }
-
 
 func testSimplePirCompressed[T matrix.Elem](t *testing.T, N uint64, d uint64, index uint64) {
 	prg := rand.NewRandomBufPRG()
@@ -214,7 +212,6 @@ func testSimplePirCompressedMany[T matrix.Elem](t *testing.T, N uint64, d uint64
 	runPIRmany(t, client, server, db, index)
 }
 
-
 // Test SimplePIR correctness on DB with short entries.
 func TestSimplePir32(t *testing.T) {
 	testSimplePir[matrix.Elem32](t, uint64(1<<20), uint64(8), 262144)
@@ -223,7 +220,6 @@ func TestSimplePir32(t *testing.T) {
 func TestSimplePirSmall64(t *testing.T) {
 	testSimplePir[matrix.Elem64](t, uint64(1<<8), uint64(3), 34)
 }
-
 
 func TestSimplePir64(t *testing.T) {
 	testSimplePir[matrix.Elem64](t, uint64(1<<20), uint64(6), 100)
@@ -236,7 +232,6 @@ func TestSimplePirMany32(t *testing.T) {
 func TestSimplePirMany64(t *testing.T) {
 	testSimplePirMany[matrix.Elem64](t, uint64(1<<20), uint64(17), 262144)
 }
-
 
 //func TestSimplePirCompressed32(t *testing.T) {
 //	testSimplePirCompressed[matrix.Elem32](t, uint64(1<<20), uint64(4), 262144)
@@ -303,4 +298,3 @@ func TestSimplePirBigDBCompressedMany32(t *testing.T) {
 func TestSimplePirBigDBCompressedMany64(t *testing.T) {
 	testSimplePirCompressedMany[matrix.Elem64](t, uint64(1<<25), uint64(18), 2)
 }
-

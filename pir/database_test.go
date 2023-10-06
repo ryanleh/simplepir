@@ -1,7 +1,7 @@
 package pir
 
 import (
-  "testing"
+	"testing"
 
 	"github.com/ryanleh/simplepir/matrix"
 )
@@ -25,17 +25,17 @@ func testDBMediumEntries[T matrix.Elem](t *testing.T) *Database[T] {
 }
 
 func TestDBMediumEntries32(t *testing.T) {
-  db := testDBMediumEntries[matrix.Elem32](t)
-  if db.Info.Ne != 1 {
-    t.Fail()
-  }
+	db := testDBMediumEntries[matrix.Elem32](t)
+	if db.Info.Ne != 1 {
+		t.Fail()
+	}
 }
 
 func TestDBMediumEntries64(t *testing.T) {
-  db := testDBMediumEntries[matrix.Elem64](t)
-  if db.Info.Ne != 1 {
-    t.Fail()
-  }
+	db := testDBMediumEntries[matrix.Elem64](t)
+	if db.Info.Ne != 1 {
+		t.Fail()
+	}
 }
 
 // Test that DB packing methods are correct, when multiple database entries fit in 1 Z_p elem.
@@ -49,11 +49,11 @@ func testDBSmallEntries[T matrix.Elem](t *testing.T) {
 }
 
 func TestDBSmallEntries32(t *testing.T) {
-  testDBSmallEntries[matrix.Elem32](t)
+	testDBSmallEntries[matrix.Elem32](t)
 }
 
 func TestDBSmallEntries64(t *testing.T) {
-  testDBSmallEntries[matrix.Elem64](t)
+	testDBSmallEntries[matrix.Elem64](t)
 }
 
 // Test that DB packing methods are correct, when each database entry requires multiple Z_p elems.
@@ -67,9 +67,9 @@ func testDBLargeEntries[T matrix.Elem](t *testing.T) {
 }
 
 func TestDBLargeEntries32(t *testing.T) {
-  testDBLargeEntries[matrix.Elem32](t)
+	testDBLargeEntries[matrix.Elem32](t)
 }
 
 func TestDBLargeEntries64(t *testing.T) {
-  testDBLargeEntries[matrix.Elem64](t)
+	testDBLargeEntries[matrix.Elem64](t)
 }

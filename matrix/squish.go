@@ -27,9 +27,9 @@ func (m *Matrix[T]) Squish() {
 			for k := uint64(0); k < delta; k++ {
 				if delta*j+k < m.cols {
 					val := m.Get(i, delta*j+k)
-          				if val >= (1 << m.SquishBasis()) {
-            					log.Fatalf("Database entry %v too large to squish", val)
-          				}
+					if val >= (1 << m.SquishBasis()) {
+						log.Fatalf("Database entry %v too large to squish", val)
+					}
 					n.data[i*n.cols+j] += (val << (k * basis))
 				}
 			}
@@ -42,27 +42,27 @@ func (m *Matrix[T]) Squish() {
 }
 
 func (m *Matrix[T]) SquishBasis() uint64 {
-  switch T(0).Bitlen() {
-    case 32:
-      return squishBasis32
-    case 64:
-      return squishBasis64
-    default:
-      panic("Shouldn't get here")
-  }
+	switch T(0).Bitlen() {
+	case 32:
+		return squishBasis32
+	case 64:
+		return squishBasis64
+	default:
+		panic("Shouldn't get here")
+	}
 }
 
 func (m *Matrix[T]) SquishRatio() uint64 {
-  switch T(0).Bitlen() {
-      case 32:
-    return squishRatio32
-      case 64:
-    return squishRatio64
-    default:
-      panic("Shouldn't get here")
-  }
+	switch T(0).Bitlen() {
+	case 32:
+		return squishRatio32
+	case 64:
+		return squishRatio64
+	default:
+		panic("Shouldn't get here")
+	}
 }
 
-func (m* Matrix[T]) CanSquish(pMod uint64) bool {
+func (m *Matrix[T]) CanSquish(pMod uint64) bool {
 	return !(pMod > (1 << m.SquishBasis()))
 }

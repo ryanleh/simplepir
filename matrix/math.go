@@ -5,8 +5,8 @@ package matrix
 import "C"
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"unsafe"
 )
 
@@ -21,18 +21,18 @@ func (a *Matrix[T]) Add(b *Matrix[T]) {
 }
 
 func (a *Matrix[T]) AddWithMismatch(b *Matrix[T]) {
-  if a.cols != b.cols {
-    fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
-    panic("Dimension mismatch")
-  }
+	if a.cols != b.cols {
+		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
+		panic("Dimension mismatch")
+	}
 
-  if a.rows < b.rows {
-    a.Concat(Zeros[T](b.rows-a.rows, a.cols))
-  }
+	if a.rows < b.rows {
+		a.Concat(Zeros[T](b.rows-a.rows, a.cols))
+	}
 
-  for i := uint64(0); i < b.cols*b.rows; i++ {
-    a.data[i] += b.data[i]
-  }
+	for i := uint64(0); i < b.cols*b.rows; i++ {
+		a.data[i] += b.data[i]
+	}
 }
 
 func (a *Matrix[T]) MulConst(val T) {
@@ -96,26 +96,26 @@ func Mul[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	bPtr := unsafe.Pointer(&b.data[0])
 
 	switch T(0).Bitlen() {
-		case 32:
-			C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
-		case 64:
-			C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
-		default:
-			panic("Shouldn't get here")
+	case 32:
+		C.matMul32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols, bcols)
+	case 64:
+		C.matMul64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols, bcols)
+	default:
+		panic("Shouldn't get here")
 	}
 
 	return out
 }
 
 func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
-        if len(a.src) != len(a.rows) {
-                panic("Bad input")
-        }
+	if len(a.src) != len(a.rows) {
+		panic("Bad input")
+	}
 
-        aRows := uint64(0)
-        for _, rows := range a.rows {
-                aRows += rows
-        }
+	aRows := uint64(0)
+	for _, rows := range a.rows {
+		aRows += rows
+	}
 
 	if a.cols != b.rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", aRows, a.cols, b.rows, b.cols)
@@ -129,33 +129,33 @@ func MulSeededLeft[T Elem](a *MatrixSeeded[T], b *Matrix[T]) *Matrix[T] {
 	bPtr := unsafe.Pointer(&b.data[0])
 
 	ch := make(chan bool)
-	for i, _ := range a.rows {
+	for i := range a.rows {
 		go func(it int, curRowsIn uint64) {
-			buf := make([]byte, elemSz * a.cols * a.rows[it])
+			buf := make([]byte, elemSz*a.cols*a.rows[it])
 			bufPtr := unsafe.Pointer(&buf[0])
-			outPtr := unsafe.Pointer(&out.data[curRowsIn * b.cols])
+			outPtr := unsafe.Pointer(&out.data[curRowsIn*b.cols])
 
 			_, err := io.ReadFull(a.src[it], buf)
 			if err != nil {
 				panic("Randomness error")
 			}
 
-			switch T(0).Bitlen(){
-				case 32:
-					C.randMatMul32((*Elem32)(outPtr), (*C.uint8_t)(bufPtr), (*Elem32)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
-				case 64:
-					C.randMatMul64((*Elem64)(outPtr), (*C.uint8_t)(bufPtr), (*Elem64)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
-				default:
-					panic("Shouldn't get here")
+			switch T(0).Bitlen() {
+			case 32:
+				C.randMatMul32((*Elem32)(outPtr), (*C.uint8_t)(bufPtr), (*Elem32)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
+			case 64:
+				C.randMatMul64((*Elem64)(outPtr), (*C.uint8_t)(bufPtr), (*Elem64)(bPtr), C.size_t(a.rows[it]), C.size_t(a.cols), C.size_t(b.cols))
+			default:
+				panic("Shouldn't get here")
 			}
 
 			ch <- true
-		} (i, curRows)
+		}(i, curRows)
 		curRows += a.rows[i]
 	}
 
 	for i := 0; i < len(a.rows); i++ {
-		b := <- ch
+		b := <-ch
 		if !b {
 			panic("Should not happen")
 		}
@@ -182,19 +182,19 @@ func MulVec[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	bPtr := unsafe.Pointer(&b.data[0])
 
 	switch T(0).Bitlen() {
-		case 32:
-			C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-		case 64:
-			C.matMulVec64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-		default:
-			panic("Shouldn't get here")
+	case 32:
+		C.matMulVec32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
+	case 64:
+		C.matMulVec64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
+	default:
+		panic("Shouldn't get here")
 	}
 
 	return out
 }
 
 func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
-	if a.cols * a.SquishRatio() != b.rows {
+	if a.cols*a.SquishRatio() != b.rows {
 		fmt.Printf("%d-by-%d vs. %d-by-%d\n", a.rows, a.cols, b.rows, b.cols)
 		fmt.Printf("Want %v == %v", a.cols*a.SquishRatio(), b.rows)
 		panic("Dimension mismatch")
@@ -212,12 +212,12 @@ func MulVecPacked[T Elem](a *Matrix[T], b *Matrix[T]) *Matrix[T] {
 	bPtr := unsafe.Pointer(&b.data[0])
 
 	switch T(0).Bitlen() {
-		case 32:
-			C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
-		case 64:
-			C.matMulVecPacked64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
-		default:
-			panic("Shouldn't get here")
+	case 32:
+		C.matMulVecPacked32((*Elem32)(outPtr), (*Elem32)(aPtr), (*Elem32)(bPtr), arows, acols)
+	case 64:
+		C.matMulVecPacked64((*Elem64)(outPtr), (*Elem64)(aPtr), (*Elem64)(bPtr), arows, acols)
+	default:
+		panic("Shouldn't get here")
 	}
 
 	out.DropLastrows(8)
@@ -240,7 +240,7 @@ func (m *Matrix[T]) ReduceMod(p uint64) {
 }
 
 func (m *Matrix[T]) ShiftDown(n int) {
-	for i := 0; i <len(m.data); i++ {
+	for i := 0; i < len(m.data); i++ {
 		m.data[i] = (m.data[i] >> n)
 	}
 }

@@ -2,41 +2,41 @@ package pir
 
 import (
 	"github.com/ryanleh/simplepir/lwe"
-	"github.com/ryanleh/simplepir/rand"
 	"github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/rand"
 )
 
 type Client[T matrix.Elem] struct {
-	prg          *rand.BufPRGReader
+	prg *rand.BufPRGReader
 
-	params       *lwe.Params
-	dbinfo       *DBInfo
-	hint         *matrix.Matrix[T]
+	params *lwe.Params
+	dbinfo *DBInfo
+	hint   *matrix.Matrix[T]
 
 	matrixAseeds []rand.PRGKey
 	matrixArows  []uint64
 }
 
 func NewClient[T matrix.Elem](hint *matrix.Matrix[T], matrixAseed *rand.PRGKey, dbinfo *DBInfo) *Client[T] {
-	return NewClientDistributed(hint, []rand.PRGKey { *matrixAseed}, []uint64{ dbinfo.M }, dbinfo)
+	return NewClientDistributed(hint, []rand.PRGKey{*matrixAseed}, []uint64{dbinfo.M}, dbinfo)
 }
 
 func NewClientDistributed[T matrix.Elem](hint *matrix.Matrix[T], matrixAseeds []rand.PRGKey, matrixArows []uint64, dbinfo *DBInfo) *Client[T] {
-  c := &Client[T]{
+	c := &Client[T]{
 		prg: rand.NewRandomBufPRG(),
 
 		params: dbinfo.Params,
-		dbinfo:  dbinfo,
+		dbinfo: dbinfo,
 
 		matrixAseeds: matrixAseeds, // Warning: not copied
-		matrixArows: matrixArows,   // Warning: not copied
+		matrixArows:  matrixArows,  // Warning: not copied
 	}
 
-  	if hint != nil {
+	if hint != nil {
 		c.hint = hint.Copy()
-  	}
+	}
 
-  	return c
+	return c
 }
 
 func (c *Client[T]) Hint() *matrix.Matrix[T] {
@@ -44,8 +44,8 @@ func (c *Client[T]) Hint() *matrix.Matrix[T] {
 }
 
 func (c *Client[T]) GenerateSecret() *matrix.Matrix[T] {
-        //log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
-        return matrix.Ternary[T](c.prg, c.params.N, 1)
+	//log.Printf("Warning! Using ternary secrets for SimplePIR LHE.")
+	return matrix.Ternary[T](c.prg, c.params.N, 1)
 }
 
 func (c *Client[T]) PreprocessQuery() *Secret[T] {
@@ -67,7 +67,7 @@ func (c *Client[T]) PreprocessQueryGivenSecret(inSecret *matrix.Matrix[T]) *Secr
 	for i, seed := range c.matrixAseeds {
 		src[i] = rand.NewBufPRG(rand.NewPRG(&seed))
 	}
-        matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
+	matrixAseeded := matrix.NewSeeded[T](src, c.matrixArows, c.params.N)
 
 	err := matrix.Gaussian[T](c.prg, c.dbinfo.M, 1)
 
@@ -88,7 +88,7 @@ func (c *Client[T]) PreprocessQueryGivenSecret(inSecret *matrix.Matrix[T]) *Secr
 func (c *Client[T]) QueryPreprocessed(i uint64, s *Secret[T]) *Query[T] {
 	s.index = i
 	s.query.AddAt(i%c.dbinfo.M, 0, T(c.params.Delta))
-	return &Query[T]{ s.query }
+	return &Query[T]{s.query}
 }
 
 func (c *Client[T]) Query(i uint64) (*Secret[T], *Query[T]) {
@@ -130,7 +130,7 @@ func (c *Client[T]) DecodeMany(ans *matrix.Matrix[T]) []uint64 {
 		var vals []uint64
 		// Recover each Z_p element that makes up the desired database entry
 		for j := uint64(0); j < c.dbinfo.Ne; j++ {
-			noised := uint64(ans.Get(row + j, 0))
+			noised := uint64(ans.Get(row+j, 0))
 			denoised := c.params.Round(noised)
 			vals = append(vals, denoised)
 		}
@@ -167,6 +167,10 @@ func (c *Client[T]) GetP() uint64 {
 
 func (c *Client[T]) GetSecurityParam() uint64 {
 	return c.params.N
+}
+
+func (c *Client[T]) GetDBInfo() *DBInfo {
+	return c.dbinfo
 }
 
 func (c *Client[T]) ClearHint() {

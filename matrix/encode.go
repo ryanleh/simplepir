@@ -1,10 +1,10 @@
 package matrix
 
 import (
-	"os"
 	"bytes"
- 	"fmt"
 	"encoding/gob"
+	"fmt"
+	"os"
 )
 
 func (m *Matrix[T]) Print() {
@@ -72,7 +72,7 @@ func (m *Matrix[T]) WriteToFileDescriptor(f *os.File) error {
 		return err
 	}
 
-	if (m.rows * m.cols != uint64(len(m.data))) {
+	if m.rows*m.cols != uint64(len(m.data)) {
 		panic("Rows/cols do not match data size")
 	}
 
@@ -102,8 +102,8 @@ func (m *Matrix[T]) ReadFromFileDescriptor(f *os.File) error {
 		return err
 	}
 
-	m.data = make([]T, m.rows * m.cols)
-	for i := uint64(0); i < m.rows * m.cols; i++ {
+	m.data = make([]T, m.rows*m.cols)
+	for i := uint64(0); i < m.rows*m.cols; i++ {
 		_, err = fmt.Fscanf(f, "%d,", &m.data[i])
 		if err != nil {
 			return err

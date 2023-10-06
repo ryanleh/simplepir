@@ -52,9 +52,9 @@ func gaussSample(src mrand.Source, cdf_table []float64, skip int) int64 {
 }
 
 func GaussSample32(src mrand.Source) int64 {
-  return gaussSample(src, cdf_table32[:], 1)
+	return gaussSample(src, cdf_table32[:], 1)
 }
 
 func GaussSample64(src mrand.Source) int64 {
-  return gaussSample(src, cdf_table64[:], cdf_skip64)
+	return gaussSample(src, cdf_table64[:], cdf_skip64)
 }

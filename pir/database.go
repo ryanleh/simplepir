@@ -1,20 +1,20 @@
 package pir
 
 import (
-  "math"
+	"math"
 )
 
 import (
-  "github.com/ryanleh/simplepir/lwe"
-  "github.com/ryanleh/simplepir/rand"
-  "github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/lwe"
+	"github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/rand"
 )
 
 type DBInfo struct {
 	Num       uint64 // number of db entries.
 	RowLength uint64 // number of bits per db entry.
 
-	Ne      uint64 // number of Z_p elems per db entry, if db entry size > log(p).
+	Ne uint64 // number of Z_p elems per db entry, if db entry size > log(p).
 
 	X uint64 // tunable param that governs communication,
 	// must be in range [1, ne] and must be a divisor of ne;
@@ -59,13 +59,13 @@ func (db *Database[T]) Squish() {
 // Store the database with entries decomposed into Z_p elements.
 // Z_p elements that encode the same database entry are stacked vertically below each other.
 func (Info *DBInfo) ReconstructElem(vals []uint64, index uint64) uint64 {
-  shortQ := (Info.Params.Logq != 64)
+	shortQ := (Info.Params.Logq != 64)
 
-	for i, _ := range vals {
+	for i := range vals {
 		vals[i] = (vals[i])
-    if shortQ {
-      vals[i] %= (1 << 32)
-    }
+		if shortQ {
+			vals[i] %= (1 << 32)
+		}
 		vals[i] = vals[i] % Info.P()
 	}
 
@@ -145,7 +145,7 @@ func NewDBInfoFixedParams(num uint64, rowLength uint64, params *lwe.Params, fixe
 	dbElems, elemsPerEntry := numEntries(num, rowLength, Info.Params.P)
 
 	Info.L = uint64(math.Ceil(float64(dbElems) / float64(Info.M)))
-	if Info.L % elemsPerEntry != 0 {
+	if Info.L%elemsPerEntry != 0 {
 		Info.L += elemsPerEntry - (Info.L % elemsPerEntry)
 	}
 
@@ -202,10 +202,10 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 		mod = (1 << rowLength)
 	}
 
-  maxSize := db.Info.P()
-  if float64(rowLength) < math.Log2(float64(db.Info.P())) {
-    maxSize = (1 << rowLength)
-  }
+	maxSize := db.Info.P()
+	if float64(rowLength) < math.Log2(float64(db.Info.P())) {
+		maxSize = (1 << rowLength)
+	}
 	db.Data = matrix.Rand[T](prg, db.Info.L, db.Info.M, maxSize)
 
 	// clear overflow cols
@@ -218,8 +218,8 @@ func NewDatabaseRandomFixedParams[T matrix.Elem](prg *rand.BufPRGReader, Num, ro
 	for i := uint64(0); i < db.Info.L*db.Info.M; i++ {
 		col := i % db.Info.M
 		if db.Data.Get(row, col) >= T(db.Info.P()) {
-      panic("bad")
-    }
+			panic("bad")
+		}
 	}
 
 	return db
@@ -239,14 +239,14 @@ func NewDatabaseFixedParams[T matrix.Elem](Num, rowLength uint64, vals []T, para
 		panic("Bad input db")
 	}
 
-  // Use multiple Z_p elems to represent each db elem
-  for i, elem := range vals {
-    for j := uint64(0); j < db.Info.Ne; j++ {
-      db.Data.Set((uint64(i)/db.Info.M)*db.Info.Ne+j,
-        uint64(i)%db.Info.M,
-        Base_p(T(db.Info.P()), elem, j))
-    }
-  }
+	// Use multiple Z_p elems to represent each db elem
+	for i, elem := range vals {
+		for j := uint64(0); j < db.Info.Ne; j++ {
+			db.Data.Set((uint64(i)/db.Info.M)*db.Info.Ne+j,
+				uint64(i)%db.Info.M,
+				Base_p(T(db.Info.P()), elem, j))
+		}
+	}
 
 	return db
 }

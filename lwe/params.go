@@ -1,9 +1,9 @@
 package lwe
 
 import (
-  "math"
-  "math/big"
-  "fmt"
+	"fmt"
+	"math"
+	"math/big"
 )
 
 // NOTE: These parameters were chosen to support ternary secrets
@@ -47,7 +47,6 @@ type Params struct {
 
 	Delta uint64 // Plaintext multiplier
 }
-
 
 func (p *Params) Round(x uint64) uint64 {
 	v := (x + p.Delta/2) / p.Delta

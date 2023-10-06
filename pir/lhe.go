@@ -1,7 +1,7 @@
 package pir
 
 import (
-        "github.com/ryanleh/simplepir/matrix"
+	"github.com/ryanleh/simplepir/matrix"
 )
 
 type SecretLHE[T matrix.Elem] struct {
@@ -30,14 +30,14 @@ func (c *Client[T]) PreprocessQueryLHEGivenSecret(inSecret *matrix.Matrix[T]) *S
 		panic("LHE requires p | q.")
 	}
 
-  s := c.PreprocessQueryGivenSecret(inSecret)
+	s := c.PreprocessQueryGivenSecret(inSecret)
 
-  return &SecretLHE[T]{
-    query: s.query,
-    secret: s.secret,
-    interm: s.interm,
-    arr: nil,
-  }
+	return &SecretLHE[T]{
+		query:  s.query,
+		secret: s.secret,
+		interm: s.interm,
+		arr:    nil,
+	}
 }
 
 func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T]) *Query[T] {
@@ -52,7 +52,7 @@ func (c *Client[T]) QueryLHEPreprocessed(arrIn *matrix.Matrix[T], s *SecretLHE[T
 	arr.AppendZeros(s.query.Rows() - arrIn.Rows())
 	s.query.Add(arr)
 
-	return &Query[T] { s.query }
+	return &Query[T]{s.query}
 }
 
 func (c *Client[T]) QueryLHE(arrIn *matrix.Matrix[T]) (*SecretLHE[T], *Query[T]) {
@@ -66,21 +66,21 @@ func (c *Client[T]) DecodeManyLHE(ans *matrix.Matrix[T]) *matrix.Matrix[T] {
 	out := matrix.Zeros[T](ans.Rows(), 1)
 	for row := uint64(0); row < ans.Rows(); row++ {
 		noised := uint64(ans.Get(row, 0))
-    //log.Printf("noised[%v] = %v   [Delta=%v]", row, noised, c.params.Delta)
+		//log.Printf("noised[%v] = %v   [Delta=%v]", row, noised, c.params.Delta)
 		denoised := c.params.Round(noised)
-		out.Set(row, 0, T(denoised % c.params.P))
+		out.Set(row, 0, T(denoised%c.params.P))
 	}
 
 	return out
 }
 
 func (c *Client[T]) RecoverManyLHE(s *SecretLHE[T], ansIn *Answer[T]) *matrix.Matrix[T] {
-	if (c.dbinfo.Ne != 1) {
+	if c.dbinfo.Ne != 1 {
 		panic("Not yet supported")
 	}
-  
+
 	if s.interm == nil {
-    		s.interm = matrix.Mul(c.hint, s.secret)
+		s.interm = matrix.Mul(c.hint, s.secret)
 	}
 
 	ans := ansIn.Answer.Copy()
