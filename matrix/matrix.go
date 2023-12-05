@@ -143,6 +143,12 @@ func Rand[T Elem](src IoRandSource, rows uint64, cols uint64, mod uint64) *Matri
 	return out
 }
 
+// Elements in range [0, 1]
+func Binary[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
+	out := Rand[T](src, rows, cols, 2)
+	return out
+}
+
 // Elements in range [0, 1, 2]
 func Ternary[T Elem](src IoRandSource, rows uint64, cols uint64) *Matrix[T] {
 	out := Rand[T](src, rows, cols, 3)
